@@ -27,6 +27,7 @@ interface CategoryDetailProps {
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
   isAlbumView?: boolean; // Indica se é visualização de álbum (para mostrar botão importar)
   albumName?: string; // Nome do álbum para importar músicas
+  albumArtist?: string; // Artista do álbum para importar músicas
 }
 
 export function CategoryDetail({
@@ -40,6 +41,7 @@ export function CategoryDetail({
   onTrackSelect,
   isAlbumView = false,
   albumName,
+  albumArtist,
 }: CategoryDetailProps) {
   const { playlists, addTrackToPlaylist, createPlaylist } = usePlaylists();
   const { addTracksFromFiles } = useMusicLibrary();
@@ -92,7 +94,8 @@ export function CategoryDetail({
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      addTracksFromFiles(files, albumName || title);
+      // Passa o nome e artista do álbum para manter todas as músicas agrupadas
+      addTracksFromFiles(files, albumName || title, albumArtist || subtitle);
       toast.success(`${files.length} música(s) adicionada(s) ao álbum!`);
     }
     e.target.value = '';

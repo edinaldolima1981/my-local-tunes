@@ -201,6 +201,7 @@ const Index = () => {
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
           isAlbumView={true}
           albumName={selectedAlbum.name}
+          albumArtist={selectedAlbum.artist}
         />
       );
     }
