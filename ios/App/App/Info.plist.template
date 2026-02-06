@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!--
+    PERMISSÕES MÍNIMAS NECESSÁRIAS
+    Este app solicita apenas permissões essenciais para reprodução de música local.
+    Nenhum dado é coletado ou enviado para servidores externos.
+    -->
+    
+    <!-- Acesso à biblioteca de mídia -->
+    <key>NSAppleMusicUsageDescription</key>
+    <string>Este app precisa acessar suas músicas para reproduzi-las. Nenhum dado é coletado ou enviado para servidores externos.</string>
+    
+    <!-- Reprodução em segundo plano -->
+    <key>UIBackgroundModes</key>
+    <array>
+        <string>audio</string>
+    </array>
+    
+    <!-- Informações do App -->
+    <key>CFBundleDisplayName</key>
+    <string>Music Player</string>
+    
+    <key>CFBundleName</key>
+    <string>Music Player</string>
+    
+    <!--
+    DECLARAÇÕES DE NÃO USO (para transparência)
+    Este app NÃO solicita:
+    - NSLocationWhenInUseUsageDescription (sem rastreamento de localização)
+    - NSContactsUsageDescription (sem acesso a contatos)
+    - NSCameraUsageDescription (sem acesso à câmera)
+    - NSPhotoLibraryUsageDescription (sem acesso a fotos)
+    -->
+    
+</dict>
+</plist>
