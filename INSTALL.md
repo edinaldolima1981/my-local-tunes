@@ -1,4 +1,15 @@
-# Music Player - Instruções de Instalação
+# Music Player - Instalação e Privacidade
+
+## 🔒 Privacidade e Segurança
+
+Este aplicativo foi projetado com foco total em privacidade:
+
+- ✅ **100% Offline** - Funciona sem internet
+- ✅ **Sem coleta de dados** - Nenhuma informação é enviada
+- ✅ **Sem login/cadastro** - Use imediatamente
+- ✅ **Sem analytics** - Nenhum rastreamento
+- ✅ **Sem anúncios** - Experiência limpa
+- ✅ **Permissões mínimas** - Apenas acesso aos arquivos de música
 
 ## Pré-requisitos
 
@@ -30,14 +41,22 @@ npx cap add ios  # apenas Mac
 Edite `android/app/src/main/AndroidManifest.xml` e adicione antes de `<application>`:
 
 ```xml
-<!-- Permissões de armazenamento -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+<!-- Acesso a arquivos de áudio (Android 12 e inferior) -->
+<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
+    android:maxSdkVersion="32" />
+
+<!-- Acesso específico a áudio (Android 13+) -->
 <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
-<!-- Para reprodução em segundo plano -->
+<!-- Reprodução em segundo plano -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+<!-- Manter reprodução com tela desligada -->
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 ```
+
+**IMPORTANTE:** O app NÃO solicita `INTERNET` nem nenhuma outra permissão.
 
 5. **Build e sync:**
 ```bash
@@ -54,16 +73,25 @@ npx cap run ios
 
 ## Funcionalidades
 
+✅ 100% Offline - Sem conexão de internet  
 ✅ Escaneia pastas Music, Download, DCIM, Audio  
 ✅ Suporta MP3, WAV, FLAC, AAC, OGG, M4A  
 ✅ Player com Play/Pause, Próxima/Anterior  
 ✅ Barra de progresso interativa  
-✅ Tempo decorrido e total  
-✅ Reprodução em segundo plano (usa Media Session API)  
+✅ Reprodução em segundo plano  
 ✅ Controle pela tela de bloqueio  
 ✅ Shuffle e Repeat  
-✅ Controle de volume  
+✅ Playlists locais  
+✅ Organização por Artista/Álbum/Pasta  
 ✅ Busca de músicas  
+
+## Dados Armazenados Localmente
+
+Os únicos dados salvos são:
+- Suas playlists (em `localStorage`)
+- Preferências de reprodução
+
+**Nenhum dado sai do seu dispositivo.**
 
 ## Estrutura de Pastas Escaneadas
 

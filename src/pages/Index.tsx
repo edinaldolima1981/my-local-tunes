@@ -10,12 +10,11 @@ import {
   ListMusic,
   Music,
   Search,
-  Settings
+  Shield
 } from 'lucide-react';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { useLibraryOrganization, Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
-import { usePlaylists } from '@/hooks/usePlaylists';
 import { TrackList } from '@/components/player/TrackList';
 import { SearchBar } from '@/components/player/SearchBar';
 import { VolumeControl } from '@/components/player/VolumeControl';
@@ -27,6 +26,7 @@ import { FolderList } from '@/components/library/FolderList';
 import { PlaylistView } from '@/components/library/PlaylistView';
 import { PlaylistDetail } from '@/components/library/PlaylistDetail';
 import { CategoryDetail } from '@/components/library/CategoryDetail';
+import { PrivacyInfo } from '@/components/PrivacyInfo';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Playlist, Track } from '@/types/music';
@@ -38,6 +38,7 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showVolume, setShowVolume] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
   const [libraryView, setLibraryView] = useState<LibraryView>('main');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -292,20 +293,31 @@ const Index = () => {
               </motion.div>
               <div>
                 <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
-                <p className="text-xs text-muted-foreground">
-                  {tracks.length} músicas
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Shield size={10} />
+                  100% Offline • {tracks.length} músicas
                 </p>
               </div>
             </div>
             
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setShowVolume(!showVolume)}
-              className={`transition-colors ${showVolume ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Volume2 size={22} />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPrivacy(true)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Shield size={20} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowVolume(!showVolume)}
+                className={`transition-colors ${showVolume ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                <Volume2 size={22} />
+              </Button>
+            </div>
           </motion.header>
 
           {/* Volume Control */}
@@ -399,6 +411,9 @@ const Index = () => {
         onToggleShuffle={player.toggleShuffle}
         onToggleRepeat={player.toggleRepeat}
       />
+
+      {/* Privacy Info Dialog */}
+      <PrivacyInfo isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
     </div>
   );
 };
