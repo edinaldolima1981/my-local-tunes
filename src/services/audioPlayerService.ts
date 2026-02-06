@@ -199,6 +199,11 @@ class AudioPlayerService {
     this.audio.src = '';
     this.currentTrack = null;
     this.updateMediaSessionState('none');
+    
+    // Clear media session
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = null;
+    }
   }
 
   async togglePlay(): Promise<void> {
