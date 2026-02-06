@@ -51,6 +51,39 @@ function parseFileName(fileName: string): { title: string; artist: string } {
   return { title: nameWithoutExt, artist: 'Artista Desconhecido' };
 }
 
+// Converte File para Data URL (persistente)
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Converte imagem para Data URL comprimida (para capas)
+function imageFileToDataUrl(file: File, maxWidth = 400): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        const ctx = canvas.getContext('2d');
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   // Carrega tracks salvos do localStorage
   const [tracks, setTracks] = useState<Track[]>(() => {
@@ -72,15 +105,10 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('customAlbums', JSON.stringify(customAlbums));
   }, [customAlbums]);
 
-  // Salva tracks do usuário no localStorage (apenas metadados, não os arquivos)
+  // Salva tracks do usuário no localStorage
   useEffect(() => {
-    // Salva apenas tracks que não são de objectURL (já que esses são temporários)
-    const tracksToSave = tracks.map(t => ({
-      ...t,
-      // Remove objectURL pois não persiste entre sessões
-      uri: t.uri?.startsWith('blob:') ? '' : t.uri,
-    }));
-    localStorage.setItem('userTracks', JSON.stringify(tracksToSave));
+    // Agora todas as URIs são Data URLs persistentes
+    localStorage.setItem('userTracks', JSON.stringify(tracks));
   }, [tracks]);
 
   const scanMusic = async () => {
@@ -161,42 +189,47 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
 
   // Adiciona músicas a partir de arquivos selecionados pelo usuário
   const addTracksFromFiles = async (files: FileList, albumName?: string, albumArtist?: string) => {
-    const newTracks: Track[] = [];
     const targetAlbum = albumName || 'Músicas Importadas';
     const targetArtist = albumArtist || 'Artista Desconhecido';
 
+    // Processa cada arquivo de forma assíncrona
     for (const file of Array.from(files)) {
       // Verifica se é um arquivo de áudio
       if (!file.type.startsWith('audio/')) continue;
 
-      const { title } = parseFileName(file.name);
-      const objectUrl = URL.createObjectURL(file);
+      try {
+        const { title } = parseFileName(file.name);
+        
+        // Converte para Data URL persistente (sobrevive ao refresh)
+        const dataUrl = await fileToDataUrl(file);
+        
+        // Cria um áudio temporário para obter a duração
+        const tempAudio = new Audio(dataUrl);
+        
+        const duration = await new Promise<number>((resolve) => {
+          tempAudio.addEventListener('loadedmetadata', () => {
+            resolve(tempAudio.duration || 0);
+          });
+          tempAudio.addEventListener('error', () => {
+            resolve(0);
+          });
+        });
 
-      const track: Track = {
-        id: generateTrackId(file.name),
-        title,
-        artist: targetArtist,
-        album: targetAlbum,
-        duration: 0,
-        uri: objectUrl,
-        coverUrl: undefined,
-      };
+        const track: Track = {
+          id: generateTrackId(file.name),
+          title,
+          artist: targetArtist,
+          album: targetAlbum,
+          duration,
+          uri: dataUrl, // Data URL persistente
+          coverUrl: undefined,
+        };
 
-      // Tenta obter a duração do áudio
-      const audio = new Audio(objectUrl);
-      audio.addEventListener('loadedmetadata', () => {
-        setTracks(prevTracks => 
-          prevTracks.map(t => 
-            t.id === track.id ? { ...t, duration: audio.duration } : t
-          )
-        );
-      });
-
-      newTracks.push(track);
-    }
-
-    if (newTracks.length > 0) {
-      setTracks(prevTracks => [...prevTracks, ...newTracks]);
+        // Adiciona a track imediatamente
+        setTracks(prevTracks => [...prevTracks, track]);
+      } catch (error) {
+        console.error('Erro ao processar arquivo:', file.name, error);
+      }
     }
   };
 
