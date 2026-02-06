@@ -190,6 +190,15 @@ class AudioPlayerService {
 
   async pause(): Promise<void> {
     this.audio.pause();
+    this.updateMediaSessionState('paused');
+  }
+
+  async stop(): Promise<void> {
+    this.audio.pause();
+    this.audio.currentTime = 0;
+    this.audio.src = '';
+    this.currentTrack = null;
+    this.updateMediaSessionState('none');
   }
 
   async togglePlay(): Promise<void> {
