@@ -1,0 +1,78 @@
+import { Track } from '@/types/music';
+import defaultCover from '@/assets/default-cover.jpg';
+
+// Mock tracks for demo - in production these would come from device filesystem
+export const mockTracks: Track[] = [
+  {
+    id: '1',
+    title: 'Midnight Dreams',
+    artist: 'Neon Pulse',
+    album: 'Electric Nights',
+    duration: 234,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '2',
+    title: 'Ocean Waves',
+    artist: 'Ambient Flow',
+    album: 'Peaceful Moments',
+    duration: 198,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '3',
+    title: 'City Lights',
+    artist: 'Urban Echo',
+    album: 'Metropolitan',
+    duration: 267,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '4',
+    title: 'Summer Breeze',
+    artist: 'Tropical Vibes',
+    album: 'Island Paradise',
+    duration: 212,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '5',
+    title: 'Stargazer',
+    artist: 'Cosmic Journey',
+    album: 'Interstellar',
+    duration: 289,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '6',
+    title: 'Forest Walk',
+    artist: 'Nature Sounds',
+    album: 'Green Escape',
+    duration: 178,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '7',
+    title: 'Digital Rain',
+    artist: 'Synthwave',
+    album: 'Cyber Dreams',
+    duration: 245,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+    coverUrl: defaultCover,
+  },
+  {
+    id: '8',
+    title: 'Mountain Peak',
+    artist: 'Alpine Echo',
+    album: 'High Altitude',
+    duration: 203,
+    uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+    coverUrl: defaultCover,
+  },
+];
