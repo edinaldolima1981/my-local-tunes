@@ -1,3 +1,4 @@
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Music, Play, Pause, Trash2, FolderOpen, Disc } from 'lucide-react';
 import { Track } from '@/types/music';
@@ -22,6 +23,7 @@ interface TrackListProps {
   currentTrack: Track | null;
   isPlaying: boolean;
   onTrackSelect: (index: number) => void;
+  highlightedTrackId?: string | null;
 }
 
 function formatDuration(seconds: number): string {
@@ -38,8 +40,17 @@ function getFolderName(uri: string): string {
   return parts[parts.length - 1] || 'Raiz';
 }
 
-export function TrackList({ tracks, currentTrack, isPlaying, onTrackSelect }: TrackListProps) {
+export function TrackList({ tracks, currentTrack, isPlaying, onTrackSelect, highlightedTrackId }: TrackListProps) {
   const { deleteTrack } = useMusicLibrary();
+  
+  // Efeito para rolar até a música destacada
+  const highlightRef = React.useRef<HTMLDivElement>(null);
+  
+  React.useEffect(() => {
+    if (highlightedTrackId && highlightRef.current) {
+      highlightRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [highlightedTrackId]);
 
   const handleDelete = (track: Track, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -67,17 +78,29 @@ export function TrackList({ tracks, currentTrack, isPlaying, onTrackSelect }: Tr
         {tracks.map((track, index) => {
           const isActive = currentTrack?.id === track.id;
           const folderName = getFolderName(track.uri);
+          const isHighlighted = highlightedTrackId === track.id;
           
           return (
             <motion.div
               key={track.id}
+              ref={isHighlighted ? highlightRef : undefined}
               initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: Math.min(index * 0.03, 0.5) }}
+              animate={{ 
+                opacity: 1, 
+                x: 0,
+                scale: isHighlighted ? [1, 1.02, 1] : 1,
+                backgroundColor: isHighlighted ? 'hsl(var(--primary) / 0.2)' : undefined,
+              }}
+              transition={{ 
+                delay: Math.min(index * 0.03, 0.5),
+                scale: { duration: 0.5, repeat: isHighlighted ? 2 : 0 }
+              }}
               className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left group
                 ${isActive 
                   ? 'bg-primary/10 border border-primary/20' 
-                  : 'hover:bg-secondary/50 border border-transparent'
+                  : isHighlighted 
+                    ? 'bg-primary/15 border-2 border-primary/40 shadow-lg shadow-primary/10' 
+                    : 'hover:bg-secondary/50 border border-transparent'
                 }`}
             >
               <button

@@ -23,6 +23,7 @@ interface PlaylistDetailProps {
   onBack: () => void;
   onPlayAll: (tracks: Track[]) => void;
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
+  onTrackDoubleClick?: (track: Track) => void;
 }
 
 export function PlaylistDetail({
@@ -32,6 +33,7 @@ export function PlaylistDetail({
   onBack,
   onPlayAll,
   onTrackSelect,
+  onTrackDoubleClick,
 }: PlaylistDetailProps) {
   const { removeTrackFromPlaylist, getPlaylist } = usePlaylists();
   const [trackToRemove, setTrackToRemove] = useState<Track | null>(null);
@@ -95,6 +97,7 @@ export function PlaylistDetail({
                 >
                   <button
                     onClick={() => onTrackSelect(track, index, currentPlaylist.tracks)}
+                    onDoubleClick={() => onTrackDoubleClick?.(track)}
                     className="flex-1 flex items-center gap-3 text-left"
                   >
                     <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center overflow-hidden">
