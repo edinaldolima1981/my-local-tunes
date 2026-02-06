@@ -12,6 +12,9 @@ interface MusicLibraryContextType {
   error: string | null;
   rescan: () => Promise<void>;
   isNativePlatform: boolean;
+  deleteTrack: (trackId: string) => void;
+  deleteTracksByArtist: (artistName: string) => void;
+  deleteTracksByAlbum: (albumName: string, artistName: string) => void;
 }
 
 const MusicLibraryContext = createContext<MusicLibraryContextType | null>(null);
@@ -76,6 +79,23 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     await scanMusic();
   };
 
+  // Exclui uma música específica da lista
+  const deleteTrack = (trackId: string) => {
+    setTracks(prevTracks => prevTracks.filter(track => track.id !== trackId));
+  };
+
+  // Exclui todas as músicas de um artista
+  const deleteTracksByArtist = (artistName: string) => {
+    setTracks(prevTracks => prevTracks.filter(track => track.artist !== artistName));
+  };
+
+  // Exclui todas as músicas de um álbum específico
+  const deleteTracksByAlbum = (albumName: string, artistName: string) => {
+    setTracks(prevTracks => prevTracks.filter(
+      track => !(track.album === albumName && track.artist === artistName)
+    ));
+  };
+
   return (
     <MusicLibraryContext.Provider
       value={{
@@ -86,6 +106,9 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         error,
         rescan,
         isNativePlatform,
+        deleteTrack,
+        deleteTracksByArtist,
+        deleteTracksByAlbum,
       }}
     >
       {children}
