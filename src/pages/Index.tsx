@@ -1,8 +1,20 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ListMusic, Disc3, RefreshCw, Volume2, FolderOpen } from 'lucide-react';
+import { 
+  Disc3, 
+  Volume2, 
+  RefreshCw, 
+  User, 
+  Disc, 
+  FolderOpen, 
+  ListMusic,
+  Music,
+  Search
+} from 'lucide-react';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
+import { useLibraryOrganization, Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
+import { usePlaylists } from '@/hooks/usePlaylists';
 import { AlbumArt } from '@/components/player/AlbumArt';
 import { ProgressBar } from '@/components/player/ProgressBar';
 import { PlayerControls } from '@/components/player/PlayerControls';
@@ -10,38 +22,244 @@ import { TrackInfo } from '@/components/player/TrackInfo';
 import { TrackList } from '@/components/player/TrackList';
 import { SearchBar } from '@/components/player/SearchBar';
 import { VolumeControl } from '@/components/player/VolumeControl';
+import { ArtistList } from '@/components/library/ArtistList';
+import { AlbumList } from '@/components/library/AlbumList';
+import { FolderList } from '@/components/library/FolderList';
+import { PlaylistView } from '@/components/library/PlaylistView';
+import { PlaylistDetail } from '@/components/library/PlaylistDetail';
+import { CategoryDetail } from '@/components/library/CategoryDetail';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Playlist, Track } from '@/types/music';
+
+type LibraryView = 'main' | 'artist' | 'album' | 'folder' | 'playlist' | 'search';
+type LibraryTab = 'songs' | 'artists' | 'albums' | 'folders' | 'playlists';
 
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showVolume, setShowVolume] = useState(false);
+  const [libraryView, setLibraryView] = useState<LibraryView>('main');
+  const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
+  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
+  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
+  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+
   const player = useAudioPlayer();
   const { tracks, isScanning, scanProgress, scanStatus, error, rescan, isNativePlatform } = useMusicLibrary();
-
-  // Load queue when tracks change
-  useEffect(() => {
-    if (tracks.length > 0 && player.queue.length === 0) {
-      player.loadQueue(tracks, 0);
-    }
-  }, [tracks]);
+  const { artists, albums, folders, searchTracks } = useLibraryOrganization(tracks);
 
   const filteredTracks = useMemo(() => {
-    if (!searchQuery.trim()) return tracks;
-    const query = searchQuery.toLowerCase();
-    return tracks.filter(
-      track =>
-        track.title.toLowerCase().includes(query) ||
-        track.artist.toLowerCase().includes(query) ||
-        track.album.toLowerCase().includes(query)
-    );
-  }, [searchQuery, tracks]);
+    return searchTracks(searchQuery);
+  }, [searchQuery, searchTracks]);
 
   const handleTrackSelect = (index: number) => {
     const track = filteredTracks[index];
     const originalIndex = tracks.findIndex(t => t.id === track.id);
     player.loadQueue(tracks, originalIndex);
+  };
+
+  const handlePlayFromCategory = (categoryTracks: Track[], index: number) => {
+    player.loadQueue(categoryTracks, index);
+  };
+
+  const handlePlayAll = (tracksToPlay: Track[]) => {
+    if (tracksToPlay.length > 0) {
+      player.loadQueue(tracksToPlay, 0);
+    }
+  };
+
+  const handleArtistSelect = (artist: Artist) => {
+    setSelectedArtist(artist);
+    setLibraryView('artist');
+  };
+
+  const handleAlbumSelect = (album: Album) => {
+    setSelectedAlbum(album);
+    setLibraryView('album');
+  };
+
+  const handleFolderSelect = (folder: Folder) => {
+    setSelectedFolder(folder);
+    setLibraryView('folder');
+  };
+
+  const handlePlaylistSelect = (playlist: Playlist) => {
+    setSelectedPlaylist(playlist);
+    setLibraryView('playlist');
+  };
+
+  const handleBackToMain = () => {
+    setLibraryView('main');
+    setSelectedArtist(null);
+    setSelectedAlbum(null);
+    setSelectedFolder(null);
+    setSelectedPlaylist(null);
+  };
+
+  const renderLibraryContent = () => {
+    // Detail views
+    if (libraryView === 'artist' && selectedArtist) {
+      return (
+        <CategoryDetail
+          title={selectedArtist.name}
+          tracks={selectedArtist.tracks}
+          currentTrack={player.currentTrack}
+          isPlaying={player.isPlaying}
+          onBack={handleBackToMain}
+          onPlayAll={handlePlayAll}
+          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+        />
+      );
+    }
+
+    if (libraryView === 'album' && selectedAlbum) {
+      return (
+        <CategoryDetail
+          title={selectedAlbum.name}
+          subtitle={selectedAlbum.artist}
+          tracks={selectedAlbum.tracks}
+          currentTrack={player.currentTrack}
+          isPlaying={player.isPlaying}
+          onBack={handleBackToMain}
+          onPlayAll={handlePlayAll}
+          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+        />
+      );
+    }
+
+    if (libraryView === 'folder' && selectedFolder) {
+      return (
+        <CategoryDetail
+          title={selectedFolder.name}
+          subtitle={selectedFolder.path}
+          tracks={selectedFolder.tracks}
+          currentTrack={player.currentTrack}
+          isPlaying={player.isPlaying}
+          onBack={handleBackToMain}
+          onPlayAll={handlePlayAll}
+          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+        />
+      );
+    }
+
+    if (libraryView === 'playlist' && selectedPlaylist) {
+      return (
+        <PlaylistDetail
+          playlist={selectedPlaylist}
+          currentTrack={player.currentTrack}
+          isPlaying={player.isPlaying}
+          onBack={handleBackToMain}
+          onPlayAll={handlePlayAll}
+          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+        />
+      );
+    }
+
+    // Main library view with tabs
+    return (
+      <div className="space-y-4">
+        <SearchBar value={searchQuery} onChange={setSearchQuery} />
+
+        {searchQuery ? (
+          // Search results
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
+              <Search size={16} />
+              <span>{filteredTracks.length} resultados para "{searchQuery}"</span>
+            </div>
+            <TrackList
+              tracks={filteredTracks}
+              currentTrack={player.currentTrack}
+              isPlaying={player.isPlaying}
+              onTrackSelect={handleTrackSelect}
+            />
+          </div>
+        ) : (
+          // Category tabs
+          <>
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {[
+                { id: 'songs', label: 'Músicas', icon: Music },
+                { id: 'artists', label: 'Artistas', icon: User },
+                { id: 'albums', label: 'Álbuns', icon: Disc },
+                { id: 'folders', label: 'Pastas', icon: FolderOpen },
+                { id: 'playlists', label: 'Playlists', icon: ListMusic },
+              ].map(({ id, label, icon: Icon }) => (
+                <Button
+                  key={id}
+                  variant={libraryTab === id ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setLibraryTab(id as LibraryTab)}
+                  className={`flex-shrink-0 ${
+                    libraryTab === id 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'border-border hover:bg-secondary'
+                  }`}
+                >
+                  <Icon size={16} className="mr-1.5" />
+                  {label}
+                </Button>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+              <span>
+                {libraryTab === 'songs' && `${tracks.length} músicas`}
+                {libraryTab === 'artists' && `${artists.length} artistas`}
+                {libraryTab === 'albums' && `${albums.length} álbuns`}
+                {libraryTab === 'folders' && `${folders.length} pastas`}
+                {libraryTab === 'playlists' && 'Suas playlists'}
+              </span>
+              {libraryTab === 'songs' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={rescan}
+                  disabled={isScanning}
+                  className="text-primary hover:text-primary/80"
+                >
+                  <RefreshCw size={16} className={`mr-2 ${isScanning ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
+              )}
+            </div>
+
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={libraryTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                {libraryTab === 'songs' && (
+                  <TrackList
+                    tracks={tracks}
+                    currentTrack={player.currentTrack}
+                    isPlaying={player.isPlaying}
+                    onTrackSelect={handleTrackSelect}
+                  />
+                )}
+                {libraryTab === 'artists' && (
+                  <ArtistList artists={artists} onArtistSelect={handleArtistSelect} />
+                )}
+                {libraryTab === 'albums' && (
+                  <AlbumList albums={albums} onAlbumSelect={handleAlbumSelect} />
+                )}
+                {libraryTab === 'folders' && (
+                  <FolderList folders={folders} onFolderSelect={handleFolderSelect} />
+                )}
+                {libraryTab === 'playlists' && (
+                  <PlaylistView onPlaylistSelect={handlePlaylistSelect} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -164,39 +382,8 @@ const Index = () => {
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="space-y-4"
             >
-              <SearchBar value={searchQuery} onChange={setSearchQuery} />
-              
-              <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-                <span>{filteredTracks.length} músicas</span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={rescan}
-                  disabled={isScanning}
-                  className="text-primary hover:text-primary/80"
-                >
-                  <RefreshCw size={16} className={`mr-2 ${isScanning ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
-              </div>
-
-              {!isNativePlatform && (
-                <div className="p-3 rounded-lg bg-secondary/30 border border-border">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <FolderOpen size={16} />
-                    <span>Modo web - usando músicas de demonstração</span>
-                  </div>
-                </div>
-              )}
-
-              <TrackList
-                tracks={filteredTracks}
-                currentTrack={player.currentTrack}
-                isPlaying={player.isPlaying}
-                onTrackSelect={handleTrackSelect}
-              />
+              {renderLibraryContent()}
             </motion.div>
           </TabsContent>
         </Tabs>
