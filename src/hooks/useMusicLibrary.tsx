@@ -24,7 +24,7 @@ interface MusicLibraryContextType {
   deleteTrack: (trackId: string) => void;
   deleteTracksByArtist: (artistName: string) => void;
   deleteTracksByAlbum: (albumName: string, artistName: string) => void;
-  addTracksFromFiles: (files: FileList, albumName?: string) => void;
+  addTracksFromFiles: (files: FileList, albumName?: string, albumArtist?: string) => void;
   createAlbum: (name: string, artist?: string) => CustomAlbum;
   deleteCustomAlbum: (albumId: string) => void;
 }
@@ -137,7 +137,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   };
 
   // Adiciona músicas a partir de arquivos selecionados pelo usuário
-  const addTracksFromFiles = (files: FileList, albumName?: string) => {
+  const addTracksFromFiles = (files: FileList, albumName?: string, albumArtist?: string) => {
     const newTracks: Track[] = [];
 
     Array.from(files).forEach((file) => {
@@ -150,7 +150,8 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
       const track: Track = {
         id: generateTrackId(file.name),
         title,
-        artist,
+        // Se foi passado albumArtist (importando para álbum específico), usa ele
+        artist: albumArtist || artist,
         album: albumName || 'Músicas Importadas',
         duration: 0, // Será atualizado quando o áudio carregar
         uri: objectUrl,
