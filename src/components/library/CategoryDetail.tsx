@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Plus, Music, ListPlus } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Music, ListPlus, Upload } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
 import { usePlaylists } from '@/hooks/usePlaylists';
+import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,8 @@ interface CategoryDetailProps {
   onBack: () => void;
   onPlayAll: (tracks: Track[]) => void;
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
+  isAlbumView?: boolean; // Indica se é visualização de álbum (para mostrar botão importar)
+  albumName?: string; // Nome do álbum para importar músicas
 }
 
 export function CategoryDetail({
@@ -35,8 +38,12 @@ export function CategoryDetail({
   onBack,
   onPlayAll,
   onTrackSelect,
+  isAlbumView = false,
+  albumName,
 }: CategoryDetailProps) {
   const { playlists, addTrackToPlaylist, createPlaylist } = usePlaylists();
+  const { addTracksFromFiles } = useMusicLibrary();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddToPlaylist, setShowAddToPlaylist] = useState(false);
   const [trackToAdd, setTrackToAdd] = useState<Track | null>(null);
   const [showCreatePlaylist, setShowCreatePlaylist] = useState(false);
@@ -78,8 +85,32 @@ export function CategoryDetail({
     setShowAddToPlaylist(false);
   };
 
+  const handleImportToAlbum = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      addTracksFromFiles(files, albumName || title);
+      toast.success(`${files.length} música(s) adicionada(s) ao álbum!`);
+    }
+    e.target.value = '';
+  };
+
   return (
     <div className="space-y-4">
+      {/* Input hidden para importar músicas */}
+      {isAlbumView && (
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="audio/*"
+          multiple
+          className="hidden"
+        />
+      )}
       {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={onBack}>
@@ -93,6 +124,20 @@ export function CategoryDetail({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Botão importar músicas - apenas para álbuns */}
+          {isAlbumView && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleImportToAlbum}
+              title="Importar músicas para este álbum"
+              className="text-xs"
+            >
+              <Upload size={16} className="mr-1.5" />
+              Importar
+            </Button>
+          )}
+          
           {tracks.length > 0 && (
             <>
               <Button

@@ -4,8 +4,17 @@ import { scanMusicFiles, requestStoragePermissions } from '@/services/musicScann
 import { mockTracks } from '@/data/mockTracks';
 import { Capacitor } from '@capacitor/core';
 
+export interface CustomAlbum {
+  id: string;
+  name: string;
+  artist: string;
+  coverUrl?: string;
+  createdAt: number;
+}
+
 interface MusicLibraryContextType {
   tracks: Track[];
+  customAlbums: CustomAlbum[];
   isScanning: boolean;
   scanProgress: number;
   scanStatus: string;
@@ -15,7 +24,9 @@ interface MusicLibraryContextType {
   deleteTrack: (trackId: string) => void;
   deleteTracksByArtist: (artistName: string) => void;
   deleteTracksByAlbum: (albumName: string, artistName: string) => void;
-  addTracksFromFiles: (files: FileList) => void;
+  addTracksFromFiles: (files: FileList, albumName?: string) => void;
+  createAlbum: (name: string, artist?: string) => CustomAlbum;
+  deleteCustomAlbum: (albumId: string) => void;
 }
 
 const MusicLibraryContext = createContext<MusicLibraryContextType | null>(null);
@@ -41,11 +52,20 @@ function parseFileName(fileName: string): { title: string; artist: string } {
 
 export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>(() => {
+    const saved = localStorage.getItem('customAlbums');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const isNativePlatform = Capacitor.isNativePlatform();
+
+  // Salva álbuns customizados no localStorage
+  useEffect(() => {
+    localStorage.setItem('customAlbums', JSON.stringify(customAlbums));
+  }, [customAlbums]);
 
   const scanMusic = async () => {
     setIsScanning(true);
@@ -117,7 +137,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   };
 
   // Adiciona músicas a partir de arquivos selecionados pelo usuário
-  const addTracksFromFiles = (files: FileList) => {
+  const addTracksFromFiles = (files: FileList, albumName?: string) => {
     const newTracks: Track[] = [];
 
     Array.from(files).forEach((file) => {
@@ -131,7 +151,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         id: generateTrackId(file.name),
         title,
         artist,
-        album: 'Músicas Importadas',
+        album: albumName || 'Músicas Importadas',
         duration: 0, // Será atualizado quando o áudio carregar
         uri: objectUrl,
         coverUrl: undefined,
@@ -155,10 +175,34 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Cria um novo álbum customizado
+  const createAlbum = (name: string, artist: string = 'Artista Desconhecido'): CustomAlbum => {
+    const newAlbum: CustomAlbum = {
+      id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      name,
+      artist,
+      createdAt: Date.now(),
+    };
+    setCustomAlbums(prev => [...prev, newAlbum]);
+    return newAlbum;
+  };
+
+  // Exclui um álbum customizado e suas músicas
+  const deleteCustomAlbum = (albumId: string) => {
+    const album = customAlbums.find(a => a.id === albumId);
+    if (album) {
+      // Remove as músicas do álbum
+      setTracks(prevTracks => prevTracks.filter(t => t.album !== album.name));
+      // Remove o álbum customizado
+      setCustomAlbums(prev => prev.filter(a => a.id !== albumId));
+    }
+  };
+
   return (
     <MusicLibraryContext.Provider
       value={{
         tracks,
+        customAlbums,
         isScanning,
         scanProgress,
         scanStatus,
@@ -169,6 +213,8 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         deleteTracksByArtist,
         deleteTracksByAlbum,
         addTracksFromFiles,
+        createAlbum,
+        deleteCustomAlbum,
       }}
     >
       {children}

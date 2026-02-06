@@ -1,9 +1,10 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Disc, Trash2, Plus, Music2, Sparkles } from 'lucide-react';
+import { Disc, Trash2, Plus, Music2, Sparkles, FolderPlus } from 'lucide-react';
 import { Album } from '@/hooks/useLibraryOrganization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { toast } from 'sonner';
 import {
@@ -17,6 +18,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 interface AlbumListProps {
   albums: Album[];
@@ -24,8 +32,11 @@ interface AlbumListProps {
 }
 
 export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
-  const { deleteTracksByAlbum, addTracksFromFiles } = useMusicLibrary();
+  const { deleteTracksByAlbum, addTracksFromFiles, createAlbum, customAlbums } = useMusicLibrary();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newAlbumName, setNewAlbumName] = useState('');
+  const [newAlbumArtist, setNewAlbumArtist] = useState('');
 
   const handleDeleteAlbum = (album: Album, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -46,6 +57,16 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
     e.target.value = '';
   };
 
+  const handleCreateAlbum = () => {
+    if (newAlbumName.trim()) {
+      createAlbum(newAlbumName.trim(), newAlbumArtist.trim() || 'Artista Desconhecido');
+      toast.success(`Álbum "${newAlbumName}" criado! Clique nele para adicionar músicas.`);
+      setNewAlbumName('');
+      setNewAlbumArtist('');
+      setShowCreateDialog(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Input hidden para seleção de arquivos */}
@@ -58,7 +79,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
         className="hidden"
       />
 
-      {/* Header com título e botão discreto */}
+      {/* Header com título e botões discretos */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Sparkles size={18} className="text-primary" />
@@ -66,15 +87,26 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
             {albums.length} {albums.length === 1 ? 'álbum' : 'álbuns'}
           </span>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleAddMusic}
-          className="h-8 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-        >
-          <Plus size={14} className="mr-1" />
-          Importar
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowCreateDialog(true)}
+            className="h-8 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <FolderPlus size={14} className="mr-1" />
+            Criar
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleAddMusic}
+            className="h-8 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+          >
+            <Plus size={14} className="mr-1" />
+            Importar
+          </Button>
+        </div>
       </div>
 
       {albums.length === 0 ? (
@@ -193,6 +225,42 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
           </div>
         </ScrollArea>
       )}
+      {/* Dialog para criar novo álbum */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Criar Novo Álbum</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nome do Álbum</label>
+              <Input
+                placeholder="Ex: Minhas Favoritas"
+                value={newAlbumName}
+                onChange={(e) => setNewAlbumName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Artista (opcional)</label>
+              <Input
+                placeholder="Ex: Vários Artistas"
+                value={newAlbumArtist}
+                onChange={(e) => setNewAlbumArtist(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreateAlbum} disabled={!newAlbumName.trim()}>
+              <FolderPlus size={16} className="mr-2" />
+              Criar Álbum
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

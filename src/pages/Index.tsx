@@ -199,6 +199,8 @@ const Index = () => {
           onBack={handleBackToMain}
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+          isAlbumView={true}
+          albumName={selectedAlbum.name}
         />
       );
     }
