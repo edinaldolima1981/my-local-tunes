@@ -51,7 +51,11 @@ function parseFileName(fileName: string): { title: string; artist: string } {
 }
 
 export function MusicLibraryProvider({ children }: { children: ReactNode }) {
-  const [tracks, setTracks] = useState<Track[]>([]);
+  // Carrega tracks salvos do localStorage
+  const [tracks, setTracks] = useState<Track[]>(() => {
+    const saved = localStorage.getItem('userTracks');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>(() => {
     const saved = localStorage.getItem('customAlbums');
     return saved ? JSON.parse(saved) : [];
@@ -67,52 +71,61 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('customAlbums', JSON.stringify(customAlbums));
   }, [customAlbums]);
 
+  // Salva tracks do usuário no localStorage (apenas metadados, não os arquivos)
+  useEffect(() => {
+    // Salva apenas tracks que não são de objectURL (já que esses são temporários)
+    const tracksToSave = tracks.map(t => ({
+      ...t,
+      // Remove objectURL pois não persiste entre sessões
+      uri: t.uri?.startsWith('blob:') ? '' : t.uri,
+    }));
+    localStorage.setItem('userTracks', JSON.stringify(tracksToSave));
+  }, [tracks]);
+
   const scanMusic = async () => {
+    // No modo web, não faz scan automático - usuário importa manualmente
+    if (!isNativePlatform) {
+      setScanStatus('Importe suas músicas para começar');
+      return;
+    }
+
     setIsScanning(true);
     setError(null);
     setScanProgress(0);
     setScanStatus('Verificando permissões...');
 
     try {
-      if (isNativePlatform) {
-        const hasPermission = await requestStoragePermissions();
-        
-        if (!hasPermission) {
-          setError('Permissão de armazenamento negada. Por favor, conceda permissão nas configurações do app.');
-          setIsScanning(false);
-          return;
-        }
+      const hasPermission = await requestStoragePermissions();
+      
+      if (!hasPermission) {
+        setError('Permissão de armazenamento negada. Por favor, conceda permissão nas configurações do app.');
+        setIsScanning(false);
+        return;
+      }
 
-        const scannedTracks = await scanMusicFiles((count, status) => {
-          setScanProgress(count);
-          setScanStatus(status);
-        });
+      const scannedTracks = await scanMusicFiles((count, status) => {
+        setScanProgress(count);
+        setScanStatus(status);
+      });
 
-        if (scannedTracks.length === 0) {
-          setScanStatus('Nenhuma música encontrada');
-          // Use mock tracks as fallback on native if no music found
-          setTracks(mockTracks);
-        } else {
-          setTracks(scannedTracks);
-          setScanStatus(`${scannedTracks.length} músicas encontradas`);
-        }
+      if (scannedTracks.length === 0) {
+        setScanStatus('Nenhuma música encontrada no dispositivo');
       } else {
-        // On web, use mock tracks
-        setScanStatus('Usando músicas de demonstração');
-        setTracks(mockTracks);
+        setTracks(prev => [...prev, ...scannedTracks]);
+        setScanStatus(`${scannedTracks.length} músicas encontradas`);
       }
     } catch (e) {
       console.error('Scan error:', e);
       setError('Erro ao escanear músicas');
-      // Fallback to mock tracks
-      setTracks(mockTracks);
     } finally {
       setIsScanning(false);
     }
   };
 
   useEffect(() => {
-    scanMusic();
+    if (isNativePlatform) {
+      scanMusic();
+    }
   }, []);
 
   const rescan = async () => {
