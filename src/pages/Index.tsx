@@ -48,6 +48,7 @@ import { CategoryDetail } from '@/components/library/CategoryDetail';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Equalizer } from '@/components/player/Equalizer';
 
 // Types
 import { Playlist, Track } from '@/types/music';
@@ -374,6 +375,7 @@ const Index = () => {
             </div>
             
             <div className="flex items-center gap-1">
+              <Equalizer />
               <Button
                 variant="ghost"
                 size="icon"

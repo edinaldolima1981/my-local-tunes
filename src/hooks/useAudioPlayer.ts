@@ -1,8 +1,30 @@
+/**
+ * @fileoverview Hook principal do player de áudio
+ * 
+ * Gerencia todo o estado de reprodução:
+ * - Faixa atual e fila de reprodução
+ * - Controles (play/pause/seek/next/prev)
+ * - Modos shuffle e repeat
+ * - Persistência automática do estado
+ */
+
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Track, RepeatMode } from '@/types/music';
 import { audioPlayerService } from '@/services/audioPlayerService';
+import { 
+  savePlayerState, 
+  loadPlayerState, 
+  restoreQueue,
+  PersistedPlayerState 
+} from '@/services/playerStateService';
+
+/** Intervalo para auto-save do estado (ms) */
+const AUTO_SAVE_INTERVAL = 5000;
 
 export function useAudioPlayer() {
+  // ============================================
+  // Estado do Player
+  // ============================================
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -12,13 +34,19 @@ export function useAudioPlayer() {
   const [repeat, setRepeat] = useState<RepeatMode>('off');
   const [queue, setQueue] = useState<Track[]>([]);
   const [queueIndex, setQueueIndex] = useState(0);
+  const [isRestored, setIsRestored] = useState(false);
   
+  // Refs para acesso em callbacks
   const queueRef = useRef(queue);
   const queueIndexRef = useRef(queueIndex);
   const repeatRef = useRef(repeat);
   const shuffleRef = useRef(shuffle);
+  const savedStateRef = useRef<PersistedPlayerState | null>(null);
 
-  // Keep refs in sync
+  // ============================================
+  // Sincronização de Refs
+  // ============================================
+  
   useEffect(() => {
     queueRef.current = queue;
   }, [queue]);
@@ -35,8 +63,68 @@ export function useAudioPlayer() {
     shuffleRef.current = shuffle;
   }, [shuffle]);
 
-  const playTrackInternal = useCallback(async (track: Track) => {
+  // ============================================
+  // Carregamento do Estado Salvo
+  // ============================================
+
+  useEffect(() => {
+    const savedState = loadPlayerState();
+    if (savedState) {
+      savedStateRef.current = savedState;
+      setVolume(savedState.volume);
+      setShuffle(savedState.shuffle);
+      setRepeat(savedState.repeat);
+      audioPlayerService.setVolume(savedState.volume);
+      console.log('[useAudioPlayer] State loaded from storage');
+    }
+  }, []);
+
+  // ============================================
+  // Auto-save do Estado
+  // ============================================
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (currentTrack) {
+        savePlayerState({
+          currentTrack,
+          currentTime: audioPlayerService.getCurrentTime(),
+          volume,
+          shuffle,
+          repeat,
+          queue,
+          queueIndex,
+        });
+      }
+    }, AUTO_SAVE_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [currentTrack, volume, shuffle, repeat, queue, queueIndex]);
+
+  // Salva estado quando a faixa muda
+  useEffect(() => {
+    if (currentTrack) {
+      savePlayerState({
+        currentTrack,
+        currentTime: 0,
+        volume,
+        shuffle,
+        repeat,
+        queue,
+        queueIndex,
+      });
+    }
+  }, [currentTrack]);
+
+  // ============================================
+  // Funções Internas
+  // ============================================
+
+  const playTrackInternal = useCallback(async (track: Track, seekTo?: number) => {
     await audioPlayerService.loadTrack(track);
+    if (seekTo !== undefined && seekTo > 0) {
+      await audioPlayerService.seek(seekTo);
+    }
     await audioPlayerService.play();
     setCurrentTrack(track);
   }, []);
@@ -137,13 +225,42 @@ export function useAudioPlayer() {
     });
   }, []);
 
+  /**
+   * Carrega uma fila de reprodução
+   * Se houver estado salvo, tenta restaurar a posição
+   */
   const loadQueue = useCallback((tracks: Track[], startIndex = 0) => {
     setQueue(tracks);
+    
+    // Tenta restaurar estado salvo na primeira carga
+    if (!isRestored && savedStateRef.current) {
+      const savedState = savedStateRef.current;
+      const restoredQueue = restoreQueue(savedState.queueIds, tracks);
+      
+      if (restoredQueue.length > 0 && savedState.currentTrack) {
+        // Encontra a faixa salva na nova lista
+        const savedTrackIndex = tracks.findIndex(t => t.id === savedState.currentTrack?.id);
+        
+        if (savedTrackIndex >= 0) {
+          setQueueIndex(savedTrackIndex);
+          // Carrega a faixa na posição salva, mas não inicia automaticamente
+          audioPlayerService.loadTrack(tracks[savedTrackIndex]);
+          audioPlayerService.seek(savedState.currentTime);
+          setCurrentTrack(tracks[savedTrackIndex]);
+          setCurrentTime(savedState.currentTime);
+          setIsRestored(true);
+          console.log('[useAudioPlayer] Restored to saved position');
+          return;
+        }
+      }
+    }
+    
+    setIsRestored(true);
     setQueueIndex(startIndex);
     if (tracks[startIndex]) {
       playTrackInternal(tracks[startIndex]);
     }
-  }, [playTrackInternal]);
+  }, [playTrackInternal, isRestored]);
 
   const playFromQueue = useCallback((index: number) => {
     if (queue[index]) {
@@ -156,7 +273,12 @@ export function useAudioPlayer() {
     playTrackInternal(track);
   }, [playTrackInternal]);
 
+  // ============================================
+  // Retorno do Hook
+  // ============================================
+
   return {
+    // Estado
     currentTrack,
     isPlaying,
     currentTime,
@@ -166,15 +288,24 @@ export function useAudioPlayer() {
     repeat,
     queue,
     queueIndex,
+    isRestored,
+    
+    // Controles básicos
     play,
     pause,
     togglePlay,
     seek,
+    
+    // Navegação
     handleNext,
     handlePrevious,
+    
+    // Configurações
     setVolumeLevel,
     toggleShuffle,
     toggleRepeat,
+    
+    // Fila
     loadQueue,
     playFromQueue,
     playTrack,

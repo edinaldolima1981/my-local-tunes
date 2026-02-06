@@ -1,3 +1,11 @@
+/**
+ * @fileoverview Mini Player
+ * 
+ * Barra inferior compacta que aparece quando há música tocando.
+ * Permite controle básico e expande para o player em tela cheia.
+ */
+
+import { forwardRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, SkipForward, ChevronUp, Music } from 'lucide-react';
 import { Track } from '@/types/music';
@@ -6,11 +14,43 @@ import { Button } from '@/components/ui/button';
 interface MiniPlayerProps {
   track: Track | null;
   isPlaying: boolean;
-  progress: number; // 0 to 1
+  /** Progresso da reprodução (0 a 1) */
+  progress: number;
   onTogglePlay: () => void;
   onNext: () => void;
   onExpand: () => void;
 }
+
+/** Componente do ícone animado de play/pause */
+const AnimatedPlayPauseIcon = forwardRef<HTMLDivElement, { isPlaying: boolean }>(
+  function AnimatedPlayPauseIcon({ isPlaying }, ref) {
+    return (
+      <div ref={ref}>
+        {isPlaying ? (
+          <Pause size={20} fill="currentColor" />
+        ) : (
+          <Play size={20} fill="currentColor" className="ml-0.5" />
+        )}
+      </div>
+    );
+  }
+);
+
+/** Componente das informações da faixa animadas */
+const AnimatedTrackInfo = forwardRef<HTMLDivElement, { track: Track }>(
+  function AnimatedTrackInfo({ track }, ref) {
+    return (
+      <div ref={ref}>
+        <p className="font-medium text-foreground truncate text-sm">
+          {track.title}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {track.artist}
+        </p>
+      </div>
+    );
+  }
+);
 
 export function MiniPlayer({
   track,
@@ -73,12 +113,7 @@ export function MiniPlayer({
                   exit={{ y: -10, opacity: 0 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <p className="font-medium text-foreground truncate text-sm">
-                    {track.title}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate">
-                    {track.artist}
-                  </p>
+                  <AnimatedTrackInfo track={track} />
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -99,21 +134,7 @@ export function MiniPlayer({
                 }}
                 className="w-11 h-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={isPlaying ? 'pause' : 'play'}
-                    initial={{ scale: 0, rotate: -90 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    exit={{ scale: 0, rotate: 90 }}
-                    transition={{ duration: 0.15 }}
-                  >
-                    {isPlaying ? (
-                      <Pause size={20} fill="currentColor" />
-                    ) : (
-                      <Play size={20} fill="currentColor" className="ml-0.5" />
-                    )}
-                  </motion.div>
-                </AnimatePresence>
+                <AnimatedPlayPauseIcon isPlaying={isPlaying} />
               </Button>
             </motion.div>
 
