@@ -42,8 +42,18 @@ export function savePlayerState(state: {
   queueIndex: number;
 }): void {
   try {
+    // Salva apenas metadados da track, sem o URI grande (Data URL)
+    const trackMetadata = state.currentTrack ? {
+      id: state.currentTrack.id,
+      title: state.currentTrack.title,
+      artist: state.currentTrack.artist,
+      album: state.currentTrack.album,
+      duration: state.currentTrack.duration,
+      // Não salva uri nem coverUrl - serão recuperados do IndexedDB
+    } : null;
+
     const persistedState: PersistedPlayerState = {
-      currentTrack: state.currentTrack,
+      currentTrack: trackMetadata as Track | null,
       currentTime: state.currentTime,
       volume: state.volume,
       shuffle: state.shuffle,
