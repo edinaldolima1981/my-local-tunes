@@ -72,6 +72,7 @@ const Index = () => {
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [libraryView, setLibraryView] = useState<LibraryView>('main');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
+  const [highlightedTrackId, setHighlightedTrackId] = useState<string | null>(null);
   
   // Estado de seleção para navegação detalhada
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -169,6 +170,22 @@ const Index = () => {
     setSelectedPlaylist(null);
   };
 
+  /** Navega para a aba de músicas com destaque na faixa selecionada */
+  const handleGoToSongsWithHighlight = (track: Track) => {
+    setHighlightedTrackId(track.id);
+    setLibraryView('main');
+    setLibraryTab('songs');
+    setSearchQuery('');
+    setSelectedArtist(null);
+    setSelectedAlbum(null);
+    setSelectedPlaylist(null);
+    
+    // Remove o destaque após alguns segundos
+    setTimeout(() => {
+      setHighlightedTrackId(null);
+    }, 3000);
+  };
+
   /** Calcula o progresso da música atual (0 a 1) */
   const progress = player.duration > 0 ? player.currentTime / player.duration : 0;
 
@@ -184,6 +201,7 @@ const Index = () => {
           onBack={handleBackToMain}
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+          onTrackDoubleClick={handleGoToSongsWithHighlight}
         />
       );
     }
@@ -199,6 +217,7 @@ const Index = () => {
           onBack={handleBackToMain}
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+          onTrackDoubleClick={handleGoToSongsWithHighlight}
           isAlbumView={true}
           albumName={selectedAlbum.name}
           albumArtist={selectedAlbum.artist}
@@ -215,6 +234,7 @@ const Index = () => {
           onBack={handleBackToMain}
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
+          onTrackDoubleClick={handleGoToSongsWithHighlight}
         />
       );
     }
@@ -300,6 +320,7 @@ const Index = () => {
                     currentTrack={player.currentTrack}
                     isPlaying={player.isPlaying}
                     onTrackSelect={handleTrackSelect}
+                    highlightedTrackId={highlightedTrackId}
                   />
                 )}
                 {libraryTab === 'artists' && (

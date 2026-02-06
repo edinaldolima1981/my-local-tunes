@@ -25,9 +25,10 @@ interface CategoryDetailProps {
   onBack: () => void;
   onPlayAll: (tracks: Track[]) => void;
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
-  isAlbumView?: boolean; // Indica se é visualização de álbum (para mostrar botão importar)
-  albumName?: string; // Nome do álbum para importar músicas
-  albumArtist?: string; // Artista do álbum para importar músicas
+  onTrackDoubleClick?: (track: Track) => void; // Novo: duplo clique para ir à aba músicas
+  isAlbumView?: boolean;
+  albumName?: string;
+  albumArtist?: string;
 }
 
 export function CategoryDetail({
@@ -39,6 +40,7 @@ export function CategoryDetail({
   onBack,
   onPlayAll,
   onTrackSelect,
+  onTrackDoubleClick,
   isAlbumView = false,
   albumName,
   albumArtist,
@@ -184,6 +186,7 @@ export function CategoryDetail({
               >
                 <button
                   onClick={() => onTrackSelect(track, index, tracks)}
+                  onDoubleClick={() => onTrackDoubleClick?.(track)}
                   className="flex-1 flex items-center gap-3 text-left"
                 >
                   <div className="w-10 h-10 rounded-md bg-secondary flex items-center justify-center overflow-hidden">
