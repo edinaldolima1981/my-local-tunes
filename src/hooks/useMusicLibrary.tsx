@@ -1,8 +1,14 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { Track } from '@/types/music';
 import { scanMusicFiles, requestStoragePermissions } from '@/services/musicScanner';
-import { mockTracks } from '@/data/mockTracks';
 import { Capacitor } from '@capacitor/core';
+import { 
+  saveAudioFile, 
+  getAudioFile, 
+  deleteAudioFile,
+  saveCoverImage,
+  getCoverImage 
+} from '@/services/audioStorageService';
 
 export interface CustomAlbum {
   id: string;
@@ -10,6 +16,16 @@ export interface CustomAlbum {
   artist: string;
   coverUrl?: string;
   createdAt: number;
+}
+
+// Metadados da track (sem o áudio em si)
+interface TrackMetadata {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  duration: number;
+  hasAudio: boolean; // Indica se há áudio no IndexedDB
 }
 
 interface MusicLibraryContextType {
@@ -39,19 +55,15 @@ function generateTrackId(fileName: string): string {
 
 // Extrai metadados básicos do nome do arquivo
 function parseFileName(fileName: string): { title: string; artist: string } {
-  // Remove extensão
   const nameWithoutExt = fileName.replace(/\.[^.]+$/, '');
-  
-  // Tenta extrair artista - título (formato comum)
   const dashMatch = nameWithoutExt.match(/^(.+?)\s*[-–]\s*(.+)$/);
   if (dashMatch) {
     return { artist: dashMatch[1].trim(), title: dashMatch[2].trim() };
   }
-  
   return { title: nameWithoutExt, artist: 'Artista Desconhecido' };
 }
 
-// Converte File para Data URL (persistente)
+// Converte File para Data URL
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -61,7 +73,7 @@ function fileToDataUrl(file: File): Promise<string> {
   });
 }
 
-// Converte imagem para Data URL comprimida (para capas)
+// Converte imagem para Data URL comprimida
 function imageFileToDataUrl(file: File, maxWidth = 400): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -69,7 +81,7 @@ function imageFileToDataUrl(file: File, maxWidth = 400): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
         canvas.width = img.width * ratio;
         canvas.height = img.height * ratio;
         const ctx = canvas.getContext('2d');
@@ -85,34 +97,90 @@ function imageFileToDataUrl(file: File, maxWidth = 400): Promise<string> {
 }
 
 export function MusicLibraryProvider({ children }: { children: ReactNode }) {
-  // Carrega tracks salvos do localStorage
-  const [tracks, setTracks] = useState<Track[]>(() => {
-    const saved = localStorage.getItem('userTracks');
-    return saved ? JSON.parse(saved) : [];
-  });
+  // Carrega metadados de tracks salvos (sem o áudio)
+  const [tracks, setTracks] = useState<Track[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  
   const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>(() => {
     const saved = localStorage.getItem('customAlbums');
     return saved ? JSON.parse(saved) : [];
   });
+  
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState('');
   const [error, setError] = useState<string | null>(null);
   const isNativePlatform = Capacitor.isNativePlatform();
 
+  // Carrega tracks do localStorage e recupera URIs do IndexedDB
+  useEffect(() => {
+    const loadTracks = async () => {
+      try {
+        const savedMetadata = localStorage.getItem('trackMetadata');
+        if (!savedMetadata) {
+          setIsLoaded(true);
+          return;
+        }
+
+        const metadata: TrackMetadata[] = JSON.parse(savedMetadata);
+        const loadedTracks: Track[] = [];
+
+        for (const meta of metadata) {
+          if (meta.hasAudio) {
+            // Recupera o áudio do IndexedDB
+            const audioDataUrl = await getAudioFile(meta.id);
+            // Recupera a capa do álbum
+            const albumKey = `${meta.album}__${meta.artist}`;
+            const coverUrl = await getCoverImage(albumKey);
+            
+            if (audioDataUrl) {
+              loadedTracks.push({
+                id: meta.id,
+                title: meta.title,
+                artist: meta.artist,
+                album: meta.album,
+                duration: meta.duration,
+                uri: audioDataUrl,
+                coverUrl: coverUrl || undefined,
+              });
+            }
+          }
+        }
+
+        setTracks(loadedTracks);
+        console.log(`[MusicLibrary] Carregadas ${loadedTracks.length} músicas do armazenamento`);
+      } catch (err) {
+        console.error('Erro ao carregar músicas:', err);
+      } finally {
+        setIsLoaded(true);
+      }
+    };
+
+    loadTracks();
+  }, []);
+
+  // Salva metadados no localStorage (apenas info básica, sem o áudio)
+  useEffect(() => {
+    if (!isLoaded) return;
+    
+    const metadata: TrackMetadata[] = tracks.map(t => ({
+      id: t.id,
+      title: t.title,
+      artist: t.artist,
+      album: t.album,
+      duration: t.duration,
+      hasAudio: !!t.uri,
+    }));
+    
+    localStorage.setItem('trackMetadata', JSON.stringify(metadata));
+  }, [tracks, isLoaded]);
+
   // Salva álbuns customizados no localStorage
   useEffect(() => {
     localStorage.setItem('customAlbums', JSON.stringify(customAlbums));
   }, [customAlbums]);
 
-  // Salva tracks do usuário no localStorage
-  useEffect(() => {
-    // Agora todas as URIs são Data URLs persistentes
-    localStorage.setItem('userTracks', JSON.stringify(tracks));
-  }, [tracks]);
-
   const scanMusic = async () => {
-    // No modo web, não faz scan automático - usuário importa manualmente
     if (!isNativePlatform) {
       setScanStatus('Importe suas músicas para começar');
       return;
@@ -127,7 +195,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
       const hasPermission = await requestStoragePermissions();
       
       if (!hasPermission) {
-        setError('Permissão de armazenamento negada. Por favor, conceda permissão nas configurações do app.');
+        setError('Permissão de armazenamento negada.');
         setIsScanning(false);
         return;
       }
@@ -152,80 +220,70 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    if (isNativePlatform) {
+    if (isNativePlatform && isLoaded) {
       scanMusic();
     }
-  }, []);
+  }, [isLoaded]);
 
   const rescan = async () => {
     await scanMusic();
   };
 
-  // Exclui uma música específica da lista
-  const deleteTrack = (trackId: string) => {
+  const deleteTrack = async (trackId: string) => {
+    // Remove do IndexedDB
+    await deleteAudioFile(trackId);
+    // Remove do estado
     setTracks(prevTracks => prevTracks.filter(track => track.id !== trackId));
   };
 
-  // Exclui todas as músicas de um artista
   const deleteTracksByArtist = (artistName: string) => {
+    const tracksToDelete = tracks.filter(t => t.artist === artistName);
+    tracksToDelete.forEach(t => deleteAudioFile(t.id));
     setTracks(prevTracks => prevTracks.filter(track => track.artist !== artistName));
   };
 
-  // Exclui todas as músicas de um álbum específico
   const deleteTracksByAlbum = (albumName: string, artistName: string) => {
+    const tracksToDelete = tracks.filter(t => t.album === albumName && t.artist === artistName);
+    tracksToDelete.forEach(t => deleteAudioFile(t.id));
     setTracks(prevTracks => prevTracks.filter(
       track => !(track.album === albumName && track.artist === artistName)
     ));
   };
 
-  // Extrai capa do álbum de arquivos de áudio (se disponível)
-  const extractCoverFromAudio = async (file: File): Promise<string | undefined> => {
-    return new Promise((resolve) => {
-      // Tenta extrair metadados usando jsmediatags se disponível
-      // Por enquanto, retorna undefined - a capa pode ser adicionada manualmente
-      resolve(undefined);
-    });
-  };
-
-  // Adiciona músicas a partir de arquivos selecionados pelo usuário
   const addTracksFromFiles = async (files: FileList, albumName?: string, albumArtist?: string) => {
     const targetAlbum = albumName || 'Músicas Importadas';
     const targetArtist = albumArtist || 'Artista Desconhecido';
 
-    // Processa cada arquivo de forma assíncrona
     for (const file of Array.from(files)) {
-      // Verifica se é um arquivo de áudio
       if (!file.type.startsWith('audio/')) continue;
 
       try {
         const { title } = parseFileName(file.name);
+        const trackId = generateTrackId(file.name);
         
-        // Converte para Data URL persistente (sobrevive ao refresh)
+        // Converte para Data URL
         const dataUrl = await fileToDataUrl(file);
         
-        // Cria um áudio temporário para obter a duração
-        const tempAudio = new Audio(dataUrl);
+        // Salva no IndexedDB (armazenamento grande)
+        await saveAudioFile(trackId, dataUrl);
         
+        // Obtém duração
+        const tempAudio = new Audio(dataUrl);
         const duration = await new Promise<number>((resolve) => {
-          tempAudio.addEventListener('loadedmetadata', () => {
-            resolve(tempAudio.duration || 0);
-          });
-          tempAudio.addEventListener('error', () => {
-            resolve(0);
-          });
+          tempAudio.addEventListener('loadedmetadata', () => resolve(tempAudio.duration || 0));
+          tempAudio.addEventListener('error', () => resolve(0));
         });
 
         const track: Track = {
-          id: generateTrackId(file.name),
+          id: trackId,
           title,
           artist: targetArtist,
           album: targetAlbum,
           duration,
-          uri: dataUrl, // Data URL persistente
+          uri: dataUrl,
           coverUrl: undefined,
         };
 
-        // Adiciona a track imediatamente
         setTracks(prevTracks => [...prevTracks, track]);
       } catch (error) {
         console.error('Erro ao processar arquivo:', file.name, error);
@@ -233,8 +291,12 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Atualiza a capa de um álbum (e todas as músicas dele)
-  const updateAlbumCover = (albumName: string, artistName: string, coverUrl: string) => {
+  const updateAlbumCover = async (albumName: string, artistName: string, coverUrl: string) => {
+    const albumKey = `${albumName}__${artistName}`;
+    
+    // Salva a capa no IndexedDB
+    await saveCoverImage(albumKey, coverUrl);
+    
     // Atualiza todas as tracks do álbum
     setTracks(prevTracks => 
       prevTracks.map(track => 
@@ -254,7 +316,6 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     );
   };
 
-  // Cria um novo álbum customizado
   const createAlbum = (name: string, artist: string = 'Artista Desconhecido'): CustomAlbum => {
     const newAlbum: CustomAlbum = {
       id: `album-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -266,13 +327,12 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     return newAlbum;
   };
 
-  // Exclui um álbum customizado e suas músicas
   const deleteCustomAlbum = (albumId: string) => {
     const album = customAlbums.find(a => a.id === albumId);
     if (album) {
-      // Remove as músicas do álbum
+      const tracksToDelete = tracks.filter(t => t.album === album.name);
+      tracksToDelete.forEach(t => deleteAudioFile(t.id));
       setTracks(prevTracks => prevTracks.filter(t => t.album !== album.name));
-      // Remove o álbum customizado
       setCustomAlbums(prev => prev.filter(a => a.id !== albumId));
     }
   };
