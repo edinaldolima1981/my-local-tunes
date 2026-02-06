@@ -1,4 +1,3 @@
-import { forwardRef } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Play, 
@@ -24,25 +23,21 @@ interface PlayerControlsProps {
   disabled?: boolean;
 }
 
-export const PlayerControls = forwardRef<HTMLDivElement, PlayerControlsProps>(function PlayerControls(
-
-  {
-    isPlaying,
-    shuffle,
-    repeat,
-    onTogglePlay,
-    onPrevious,
-    onNext,
-    onToggleShuffle,
-    onToggleRepeat,
-    disabled = false,
-  },
-  ref
-) {
+export function PlayerControls({
+  isPlaying,
+  shuffle,
+  repeat,
+  onTogglePlay,
+  onPrevious,
+  onNext,
+  onToggleShuffle,
+  onToggleRepeat,
+  disabled = false,
+}: PlayerControlsProps) {
   const RepeatIcon = repeat === 'one' ? Repeat1 : Repeat;
 
   return (
-    <div ref={ref} className="flex items-center justify-center gap-2 md:gap-4">
+    <div className="flex items-center justify-center gap-2 md:gap-4">
       {/* Shuffle */}
       <Button
         variant="ghost"
@@ -83,7 +78,11 @@ export const PlayerControls = forwardRef<HTMLDivElement, PlayerControlsProps>(fu
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            {isPlaying ? <Pause size={28} fill="currentColor" /> : <Play size={28} fill="currentColor" className="ml-1" />}
+            {isPlaying ? (
+              <Pause size={28} fill="currentColor" />
+            ) : (
+              <Play size={28} fill="currentColor" className="ml-1" />
+            )}
           </motion.div>
         </Button>
       </motion.div>
@@ -111,4 +110,4 @@ export const PlayerControls = forwardRef<HTMLDivElement, PlayerControlsProps>(fu
       </Button>
     </div>
   );
-});
+}
