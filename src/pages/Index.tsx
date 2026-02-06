@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Disc3, 
@@ -9,26 +9,24 @@ import {
   FolderOpen, 
   ListMusic,
   Music,
-  Search
+  Search,
+  Settings
 } from 'lucide-react';
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { useLibraryOrganization, Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
 import { usePlaylists } from '@/hooks/usePlaylists';
-import { AlbumArt } from '@/components/player/AlbumArt';
-import { ProgressBar } from '@/components/player/ProgressBar';
-import { PlayerControls } from '@/components/player/PlayerControls';
-import { TrackInfo } from '@/components/player/TrackInfo';
 import { TrackList } from '@/components/player/TrackList';
 import { SearchBar } from '@/components/player/SearchBar';
 import { VolumeControl } from '@/components/player/VolumeControl';
+import { MiniPlayer } from '@/components/player/MiniPlayer';
+import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 import { ArtistList } from '@/components/library/ArtistList';
 import { AlbumList } from '@/components/library/AlbumList';
 import { FolderList } from '@/components/library/FolderList';
 import { PlaylistView } from '@/components/library/PlaylistView';
 import { PlaylistDetail } from '@/components/library/PlaylistDetail';
 import { CategoryDetail } from '@/components/library/CategoryDetail';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Playlist, Track } from '@/types/music';
@@ -39,6 +37,7 @@ type LibraryTab = 'songs' | 'artists' | 'albums' | 'folders' | 'playlists';
 const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showVolume, setShowVolume] = useState(false);
+  const [showFullscreen, setShowFullscreen] = useState(false);
   const [libraryView, setLibraryView] = useState<LibraryView>('main');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
@@ -47,8 +46,15 @@ const Index = () => {
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
   const player = useAudioPlayer();
-  const { tracks, isScanning, scanProgress, scanStatus, error, rescan, isNativePlatform } = useMusicLibrary();
+  const { tracks, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
   const { artists, albums, folders, searchTracks } = useLibraryOrganization(tracks);
+
+  // Auto-load queue when tracks change
+  useEffect(() => {
+    if (tracks.length > 0 && player.queue.length === 0) {
+      player.loadQueue(tracks, 0);
+    }
+  }, [tracks]);
 
   const filteredTracks = useMemo(() => {
     return searchTracks(searchQuery);
@@ -97,6 +103,8 @@ const Index = () => {
     setSelectedFolder(null);
     setSelectedPlaylist(null);
   };
+
+  const progress = player.duration > 0 ? player.currentTime / player.duration : 0;
 
   const renderLibraryContent = () => {
     // Detail views
@@ -179,7 +187,7 @@ const Index = () => {
         ) : (
           // Category tabs
           <>
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
               {[
                 { id: 'songs', label: 'Músicas', icon: Music },
                 { id: 'artists', label: 'Artistas', icon: User },
@@ -189,13 +197,13 @@ const Index = () => {
               ].map(({ id, label, icon: Icon }) => (
                 <Button
                   key={id}
-                  variant={libraryTab === id ? 'default' : 'outline'}
+                  variant={libraryTab === id ? 'default' : 'ghost'}
                   size="sm"
                   onClick={() => setLibraryTab(id as LibraryTab)}
-                  className={`flex-shrink-0 ${
+                  className={`flex-shrink-0 rounded-full px-4 transition-all duration-200 ${
                     libraryTab === id 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'border-border hover:bg-secondary'
+                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
                   }`}
                 >
                   <Icon size={16} className="mr-1.5" />
@@ -263,131 +271,134 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background safe-area-inset">
+    <div className="min-h-screen bg-background">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-surface opacity-50 pointer-events-none" />
       
-      <div className="relative z-10 container max-w-lg mx-auto px-4 py-6">
-        {/* Header */}
-        <motion.header 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-6"
-        >
-          <div className="flex items-center gap-3">
-            <Disc3 className="text-primary animate-spin-slow" size={28} />
-            <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
-          </div>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowVolume(!showVolume)}
-            className="text-muted-foreground hover:text-foreground"
+      <div className="relative z-10 pb-24">
+        <div className="container max-w-lg mx-auto px-4 py-6 safe-area-inset">
+          {/* Header */}
+          <motion.header 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between mb-6"
           >
-            <Volume2 size={20} />
-          </Button>
-        </motion.header>
-
-        {/* Volume Control */}
-        <AnimatePresence>
-          {showVolume && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4 overflow-hidden"
-            >
-              <VolumeControl volume={player.volume} onVolumeChange={player.setVolumeLevel} />
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Error Alert */}
-        {error && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Scanning Status */}
-        {isScanning && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="mb-4 p-4 rounded-lg bg-secondary/50 flex items-center gap-3"
-          >
-            <RefreshCw className="animate-spin text-primary" size={20} />
-            <div className="flex-1">
-              <p className="text-sm font-medium">{scanStatus}</p>
-              <p className="text-xs text-muted-foreground">{scanProgress} arquivos encontrados</p>
-            </div>
-          </motion.div>
-        )}
-
-        <Tabs defaultValue="player" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6 bg-secondary/50">
-            <TabsTrigger value="player" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <Disc3 size={18} className="mr-2" />
-              Player
-            </TabsTrigger>
-            <TabsTrigger value="library" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-              <ListMusic size={18} className="mr-2" />
-              Biblioteca
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Player View */}
-          <TabsContent value="player" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="flex flex-col items-center space-y-6"
-            >
-              {/* Album Art */}
-              <AlbumArt 
-                coverUrl={player.currentTrack?.coverUrl} 
-                isPlaying={player.isPlaying} 
-              />
-
-              {/* Track Info */}
-              <TrackInfo track={player.currentTrack} />
-
-              {/* Progress Bar */}
-              <div className="w-full px-2">
-                <ProgressBar
-                  currentTime={player.currentTime}
-                  duration={player.duration}
-                  onSeek={player.seek}
-                />
+            <div className="flex items-center gap-3">
+              <motion.div
+                animate={{ rotate: player.isPlaying ? 360 : 0 }}
+                transition={{ duration: 3, repeat: player.isPlaying ? Infinity : 0, ease: "linear" }}
+              >
+                <Disc3 className="text-primary" size={32} />
+              </motion.div>
+              <div>
+                <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
+                <p className="text-xs text-muted-foreground">
+                  {tracks.length} músicas
+                </p>
               </div>
-
-              {/* Controls */}
-              <PlayerControls
-                isPlaying={player.isPlaying}
-                shuffle={player.shuffle}
-                repeat={player.repeat}
-                onTogglePlay={player.togglePlay}
-                onPrevious={player.handlePrevious}
-                onNext={player.handleNext}
-                onToggleShuffle={player.toggleShuffle}
-                onToggleRepeat={player.toggleRepeat}
-                disabled={!player.currentTrack}
-              />
-            </motion.div>
-          </TabsContent>
-
-          {/* Library View */}
-          <TabsContent value="library" className="mt-0">
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowVolume(!showVolume)}
+              className={`transition-colors ${showVolume ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
             >
-              {renderLibraryContent()}
-            </motion.div>
-          </TabsContent>
-        </Tabs>
+              <Volume2 size={22} />
+            </Button>
+          </motion.header>
+
+          {/* Volume Control */}
+          <AnimatePresence>
+            {showVolume && (
+              <motion.div
+                initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                className="overflow-hidden"
+              >
+                <VolumeControl volume={player.volume} onVolumeChange={player.setVolumeLevel} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Error Alert */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Scanning Status */}
+          <AnimatePresence>
+            {isScanning && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="mb-4 p-4 rounded-2xl bg-secondary/50 backdrop-blur-sm flex items-center gap-3 border border-border/50"
+              >
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                  <RefreshCw className="animate-spin text-primary" size={20} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{scanStatus}</p>
+                  <p className="text-xs text-muted-foreground">{scanProgress} arquivos encontrados</p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Library Content */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+          >
+            {renderLibraryContent()}
+          </motion.div>
+        </div>
       </div>
+
+      {/* Mini Player */}
+      <AnimatePresence>
+        {player.currentTrack && !showFullscreen && (
+          <MiniPlayer
+            track={player.currentTrack}
+            isPlaying={player.isPlaying}
+            progress={progress}
+            onTogglePlay={player.togglePlay}
+            onNext={player.handleNext}
+            onExpand={() => setShowFullscreen(true)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Fullscreen Player */}
+      <FullscreenPlayer
+        isOpen={showFullscreen}
+        onClose={() => setShowFullscreen(false)}
+        track={player.currentTrack}
+        isPlaying={player.isPlaying}
+        currentTime={player.currentTime}
+        duration={player.duration}
+        shuffle={player.shuffle}
+        repeat={player.repeat}
+        onTogglePlay={player.togglePlay}
+        onPrevious={player.handlePrevious}
+        onNext={player.handleNext}
+        onSeek={player.seek}
+        onToggleShuffle={player.toggleShuffle}
+        onToggleRepeat={player.toggleRepeat}
+      />
     </div>
   );
 };
