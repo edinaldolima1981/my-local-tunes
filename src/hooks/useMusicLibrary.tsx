@@ -27,6 +27,7 @@ interface MusicLibraryContextType {
   addTracksFromFiles: (files: FileList, albumName?: string, albumArtist?: string) => void;
   createAlbum: (name: string, artist?: string) => CustomAlbum;
   deleteCustomAlbum: (albumId: string) => void;
+  updateAlbumCover: (albumName: string, artistName: string, coverUrl: string) => void;
 }
 
 const MusicLibraryContext = createContext<MusicLibraryContextType | null>(null);
@@ -149,24 +150,34 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     ));
   };
 
+  // Extrai capa do álbum de arquivos de áudio (se disponível)
+  const extractCoverFromAudio = async (file: File): Promise<string | undefined> => {
+    return new Promise((resolve) => {
+      // Tenta extrair metadados usando jsmediatags se disponível
+      // Por enquanto, retorna undefined - a capa pode ser adicionada manualmente
+      resolve(undefined);
+    });
+  };
+
   // Adiciona músicas a partir de arquivos selecionados pelo usuário
-  const addTracksFromFiles = (files: FileList, albumName?: string, albumArtist?: string) => {
+  const addTracksFromFiles = async (files: FileList, albumName?: string, albumArtist?: string) => {
     const newTracks: Track[] = [];
+    const targetAlbum = albumName || 'Músicas Importadas';
+    const targetArtist = albumArtist || 'Artista Desconhecido';
 
-    Array.from(files).forEach((file) => {
+    for (const file of Array.from(files)) {
       // Verifica se é um arquivo de áudio
-      if (!file.type.startsWith('audio/')) return;
+      if (!file.type.startsWith('audio/')) continue;
 
-      const { title, artist } = parseFileName(file.name);
+      const { title } = parseFileName(file.name);
       const objectUrl = URL.createObjectURL(file);
 
       const track: Track = {
         id: generateTrackId(file.name),
         title,
-        // Se foi passado albumArtist (importando para álbum específico), usa ele
-        artist: albumArtist || artist,
-        album: albumName || 'Músicas Importadas',
-        duration: 0, // Será atualizado quando o áudio carregar
+        artist: targetArtist,
+        album: targetAlbum,
+        duration: 0,
         uri: objectUrl,
         coverUrl: undefined,
       };
@@ -182,11 +193,32 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
       });
 
       newTracks.push(track);
-    });
+    }
 
     if (newTracks.length > 0) {
       setTracks(prevTracks => [...prevTracks, ...newTracks]);
     }
+  };
+
+  // Atualiza a capa de um álbum (e todas as músicas dele)
+  const updateAlbumCover = (albumName: string, artistName: string, coverUrl: string) => {
+    // Atualiza todas as tracks do álbum
+    setTracks(prevTracks => 
+      prevTracks.map(track => 
+        track.album === albumName && track.artist === artistName
+          ? { ...track, coverUrl }
+          : track
+      )
+    );
+    
+    // Atualiza o álbum customizado se existir
+    setCustomAlbums(prev => 
+      prev.map(album => 
+        album.name === albumName && album.artist === artistName
+          ? { ...album, coverUrl }
+          : album
+      )
+    );
   };
 
   // Cria um novo álbum customizado
@@ -229,6 +261,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         addTracksFromFiles,
         createAlbum,
         deleteCustomAlbum,
+        updateAlbumCover,
       }}
     >
       {children}

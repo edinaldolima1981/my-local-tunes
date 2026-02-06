@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Disc, Trash2, Plus, Music2, Sparkles, FolderPlus } from 'lucide-react';
+import { Disc, Trash2, Plus, Music2, Sparkles, FolderPlus, ImagePlus } from 'lucide-react';
 import { Album } from '@/hooks/useLibraryOrganization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -32,15 +32,21 @@ interface AlbumListProps {
 }
 
 export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
-  const { deleteTracksByAlbum, addTracksFromFiles, createAlbum, customAlbums } = useMusicLibrary();
+  const { deleteTracksByAlbum, addTracksFromFiles, createAlbum, customAlbums, deleteCustomAlbum, updateAlbumCover } = useMusicLibrary();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumArtist, setNewAlbumArtist] = useState('');
+  const [albumForCover, setAlbumForCover] = useState<Album | null>(null);
 
-  const handleDeleteAlbum = (album: Album, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteAlbum = (album: Album) => {
     deleteTracksByAlbum(album.name, album.artist);
+    // Também remove o álbum customizado se existir
+    const customAlbum = customAlbums.find(a => a.name === album.name && a.artist === album.artist);
+    if (customAlbum) {
+      deleteCustomAlbum(customAlbum.id);
+    }
     toast.success(`Álbum "${album.name}" removido da biblioteca`);
   };
 
@@ -67,15 +73,47 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
     }
   };
 
+  const handleCoverClick = (album: Album, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAlbumForCover(album);
+    coverInputRef.current?.click();
+  };
+
+  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && albumForCover) {
+      // Verifica se é uma imagem
+      if (!file.type.startsWith('image/')) {
+        toast.error('Selecione um arquivo de imagem válido');
+        return;
+      }
+      
+      const coverUrl = URL.createObjectURL(file);
+      updateAlbumCover(albumForCover.name, albumForCover.artist, coverUrl);
+      toast.success(`Capa do álbum "${albumForCover.name}" atualizada!`);
+    }
+    e.target.value = '';
+    setAlbumForCover(null);
+  };
+
   return (
     <div className="space-y-4">
-      {/* Input hidden para seleção de arquivos */}
+      {/* Input hidden para seleção de arquivos de áudio */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         accept="audio/*"
         multiple
+        className="hidden"
+      />
+      
+      {/* Input hidden para seleção de capa */}
+      <input
+        type="file"
+        ref={coverInputRef}
+        onChange={handleCoverChange}
+        accept="image/*"
         className="hidden"
       />
 
@@ -190,6 +228,17 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
                   </div>
                 </button>
 
+                {/* Botão Adicionar Capa - aparece no hover */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 left-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-black/50 backdrop-blur-sm text-white/80 hover:text-primary hover:bg-black/70"
+                  onClick={(e) => handleCoverClick(album, e)}
+                  title="Adicionar capa"
+                >
+                  <ImagePlus size={14} />
+                </Button>
+
                 {/* Botão Excluir - aparece no hover */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -212,7 +261,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancelar</AlertDialogCancel>
                       <AlertDialogAction
-                        onClick={(e) => handleDeleteAlbum(album, e)}
+                        onClick={() => handleDeleteAlbum(album)}
                         className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                       >
                         Excluir
