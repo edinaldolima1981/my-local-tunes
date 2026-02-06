@@ -86,10 +86,10 @@ const Index = () => {
   const player = useAudioPlayer();
   
   /** Hook da biblioteca - escaneia e gerencia arquivos de música */
-  const { tracks, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
+  const { tracks, customAlbums, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
   
   /** Hook de organização - agrupa por artista, álbum */
-  const { artists, albums, searchTracks } = useLibraryOrganization(tracks);
+  const { artists, albums, searchTracks } = useLibraryOrganization(tracks, customAlbums);
 
   // ============================================
   // Efeitos
