@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode, useRef } from 'react';
 import { Track, Playlist } from '@/types/music';
 import {
   loadPlaylists,
@@ -8,6 +8,7 @@ import {
   removeTrackFromPlaylist as removeTrackUtil,
   deletePlaylist as deletePlaylistUtil,
   renamePlaylist as renamePlaylistUtil,
+  resolvePlaylistTracks,
 } from '@/services/playlistService';
 
 interface PlaylistContextType {
@@ -18,22 +19,44 @@ interface PlaylistContextType {
   addTrackToPlaylist: (playlistId: string, track: Track) => void;
   removeTrackFromPlaylist: (playlistId: string, trackId: string) => void;
   getPlaylist: (playlistId: string) => Playlist | undefined;
+  resolvePlaylists: (allTracks: Track[]) => void;
 }
 
 const PlaylistContext = createContext<PlaylistContextType | null>(null);
 
 export function PlaylistProvider({ children }: { children: ReactNode }) {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [isResolved, setIsResolved] = useState(false);
+  const hasLoaded = useRef(false);
 
+  // Carrega playlists do localStorage (apenas uma vez)
   useEffect(() => {
-    setPlaylists(loadPlaylists());
+    if (!hasLoaded.current) {
+      hasLoaded.current = true;
+      const loaded = loadPlaylists();
+      setPlaylists(loaded);
+    }
   }, []);
 
+  // Salva playlists quando mudam (após resolução)
   useEffect(() => {
-    if (playlists.length > 0) {
+    if (isResolved) {
       savePlaylists(playlists);
     }
-  }, [playlists]);
+  }, [playlists, isResolved]);
+
+  // Resolve as tracks das playlists usando a biblioteca
+  const resolvePlaylists = useCallback((allTracks: Track[]) => {
+    if (allTracks.length === 0) return;
+    
+    setPlaylists(prev => {
+      const resolved = prev.map(p => 
+        resolvePlaylistTracks(p as Playlist & { _trackIds?: string[] }, allTracks)
+      );
+      return resolved;
+    });
+    setIsResolved(true);
+  }, []);
 
   const createPlaylist = useCallback((name: string, tracks: Track[] = []) => {
     const newPlaylist = createPlaylistUtil(name, tracks);
@@ -78,6 +101,7 @@ export function PlaylistProvider({ children }: { children: ReactNode }) {
         addTrackToPlaylist,
         removeTrackFromPlaylist,
         getPlaylist,
+        resolvePlaylists,
       }}
     >
       {children}

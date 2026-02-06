@@ -28,6 +28,7 @@ import {
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { useLibraryOrganization, Artist, Album } from '@/hooks/useLibraryOrganization';
+import { usePlaylists } from '@/hooks/usePlaylists';
 
 // Componentes do Player
 import { TrackList } from '@/components/player/TrackList';
@@ -91,10 +92,22 @@ const Index = () => {
   
   /** Hook de organização - agrupa por artista, álbum */
   const { artists, albums, searchTracks } = useLibraryOrganization(tracks, customAlbums);
+  
+  /** Hook de playlists */
+  const { resolvePlaylists } = usePlaylists();
 
   // ============================================
   // Efeitos
   // ============================================
+
+  /**
+   * Resolve as tracks das playlists quando a biblioteca carrega
+   */
+  useEffect(() => {
+    if (tracks.length > 0) {
+      resolvePlaylists(tracks);
+    }
+  }, [tracks, resolvePlaylists]);
 
   /**
    * Carrega a fila de reprodução quando as músicas são escaneadas
