@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Disc, Trash2, Plus, Upload } from 'lucide-react';
+import { Disc, Trash2, Plus, Music2, Sparkles } from 'lucide-react';
 import { Album } from '@/hooks/useLibraryOrganization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -43,7 +43,6 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
       addTracksFromFiles(files);
       toast.success(`${files.length} música(s) adicionada(s)!`);
     }
-    // Reset input para permitir selecionar os mesmos arquivos novamente
     e.target.value = '';
   };
 
@@ -59,80 +58,116 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
         className="hidden"
       />
 
-      {/* Botão Adicionar Músicas */}
-      <motion.button
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        onClick={handleAddMusic}
-        className="w-full flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-primary/20 to-accent/20 border-2 border-dashed border-primary/40 hover:border-primary/60 hover:from-primary/30 hover:to-accent/30 transition-all duration-300"
-      >
-        <div className="w-14 h-14 rounded-xl bg-primary/30 flex items-center justify-center">
-          <Upload size={28} className="text-primary" />
+      {/* Header com título e botão discreto */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <Sparkles size={18} className="text-primary" />
+          <span className="text-sm text-muted-foreground font-medium">
+            {albums.length} {albums.length === 1 ? 'álbum' : 'álbuns'}
+          </span>
         </div>
-        <div className="flex-1 text-left">
-          <p className="font-semibold text-foreground text-lg">Adicionar Músicas</p>
-          <p className="text-sm text-muted-foreground">
-            Importe arquivos de áudio do seu dispositivo
-          </p>
-        </div>
-        <Plus size={24} className="text-primary" />
-      </motion.button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleAddMusic}
+          className="h-8 px-3 text-xs text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+        >
+          <Plus size={14} className="mr-1" />
+          Importar
+        </Button>
+      </div>
 
       {albums.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
-          <Disc size={40} className="mb-2" />
-          <p>Nenhum álbum encontrado</p>
-          <p className="text-sm">Adicione músicas para começar</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center py-16 text-center"
+        >
+          <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
+            <Music2 size={40} className="text-primary/60" />
+          </div>
+          <p className="text-foreground font-medium mb-1">Sua biblioteca está vazia</p>
+          <p className="text-sm text-muted-foreground mb-4">
+            Importe músicas para começar sua coleção
+          </p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleAddMusic}
+            className="border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Plus size={16} className="mr-2" />
+            Adicionar músicas
+          </Button>
+        </motion.div>
       ) : (
-        <ScrollArea className="h-[calc(100vh-380px)]">
-          <div className="grid grid-cols-2 gap-3">
+        <ScrollArea className="h-[calc(100vh-340px)]">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pb-4">
             {albums.map((album, index) => (
               <motion.div
                 key={`${album.name}-${album.artist}`}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.03 }}
-                className="relative flex flex-col items-center p-3 rounded-xl hover:bg-secondary/50 transition-colors text-center group"
+                transition={{ delay: index * 0.02, duration: 0.2 }}
+                className="group relative"
               >
                 <button
                   onClick={() => onAlbumSelect(album)}
-                  className="w-full flex flex-col items-center"
+                  className="w-full text-left focus:outline-none focus:ring-2 focus:ring-primary/50 rounded-2xl"
                 >
-                  {/* Capa do Álbum em Destaque */}
-                  <div className="relative w-full aspect-square rounded-xl bg-secondary flex items-center justify-center overflow-hidden mb-3 shadow-xl ring-2 ring-primary/10">
+                  {/* Capa do Álbum */}
+                  <div className="relative aspect-square rounded-2xl overflow-hidden bg-secondary shadow-lg group-hover:shadow-xl group-hover:shadow-primary/10 transition-all duration-300">
                     {album.coverUrl ? (
-                      <img src={album.coverUrl} alt={album.name} className="w-full h-full object-cover" />
+                      <img 
+                        src={album.coverUrl} 
+                        alt={album.name} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      />
                     ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                        <Disc size={48} className="text-muted-foreground" />
+                      <div className="w-full h-full bg-gradient-to-br from-secondary via-muted to-secondary flex items-center justify-center">
+                        <Disc size={40} className="text-muted-foreground/50" />
                       </div>
                     )}
                     
-                    {/* Overlay com gradiente */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    {/* Overlay gradiente */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     
-                    {/* Número de músicas no canto */}
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/50 backdrop-blur-sm rounded-full text-xs text-white font-medium">
+                    {/* Play indicator on hover */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg backdrop-blur-sm">
+                        <svg className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    {/* Badge de músicas */}
+                    <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded-full text-[10px] text-white/90 font-medium">
                       {album.trackCount} {album.trackCount === 1 ? 'música' : 'músicas'}
                     </div>
                   </div>
                   
                   {/* Informações do Álbum */}
-                  <p className="font-semibold text-foreground truncate w-full text-sm">{album.name}</p>
-                  <p className="text-xs text-muted-foreground truncate w-full">{album.artist}</p>
+                  <div className="mt-2.5 px-1">
+                    <p className="font-semibold text-foreground truncate text-sm leading-tight">
+                      {album.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {album.artist}
+                    </p>
+                  </div>
                 </button>
 
-                {/* Botão Excluir Álbum */}
+                {/* Botão Excluir - aparece no hover */}
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-black/50 backdrop-blur-sm text-white hover:text-destructive hover:bg-destructive/20"
+                      className="absolute top-2 right-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-black/50 backdrop-blur-sm text-white/80 hover:text-destructive hover:bg-black/70"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent className="bg-card border-border">
