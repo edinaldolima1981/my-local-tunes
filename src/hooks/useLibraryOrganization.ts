@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { Track } from '@/types/music';
+import { CustomAlbum } from '@/hooks/useMusicLibrary';
 
 export interface Artist {
   name: string;
@@ -14,6 +15,8 @@ export interface Album {
   tracks: Track[];
   trackCount: number;
   coverUrl?: string;
+  isCustom?: boolean;
+  customId?: string;
 }
 
 export interface Folder {
@@ -23,7 +26,7 @@ export interface Folder {
   trackCount: number;
 }
 
-export function useLibraryOrganization(tracks: Track[]) {
+export function useLibraryOrganization(tracks: Track[], customAlbums: CustomAlbum[] = []) {
   const artists = useMemo<Artist[]>(() => {
     const artistMap = new Map<string, Track[]>();
     
@@ -44,8 +47,20 @@ export function useLibraryOrganization(tracks: Track[]) {
   }, [tracks]);
 
   const albums = useMemo<Album[]>(() => {
-    const albumMap = new Map<string, { artist: string; tracks: Track[] }>();
+    const albumMap = new Map<string, { artist: string; tracks: Track[]; isCustom?: boolean; customId?: string }>();
     
+    // Primeiro adiciona os álbuns customizados (vazios ou não)
+    customAlbums.forEach(customAlbum => {
+      const key = `${customAlbum.name}__${customAlbum.artist}`;
+      albumMap.set(key, {
+        artist: customAlbum.artist,
+        tracks: [],
+        isCustom: true,
+        customId: customAlbum.id,
+      });
+    });
+    
+    // Depois agrupa as músicas por álbum
     tracks.forEach(track => {
       const albumName = track.album || 'Álbum Desconhecido';
       const key = `${albumName}__${track.artist}`;
@@ -68,9 +83,11 @@ export function useLibraryOrganization(tracks: Track[]) {
         tracks: data.tracks,
         trackCount: data.tracks.length,
         coverUrl: data.tracks[0]?.coverUrl,
+        isCustom: data.isCustom,
+        customId: data.customId,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [tracks]);
+  }, [tracks, customAlbums]);
 
   const folders = useMemo<Folder[]>(() => {
     const folderMap = new Map<string, Track[]>();
