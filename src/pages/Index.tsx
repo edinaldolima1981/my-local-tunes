@@ -27,7 +27,7 @@ import {
 // Hooks
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
-import { useLibraryOrganization, Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
+import { useLibraryOrganization, Artist, Album } from '@/hooks/useLibraryOrganization';
 
 // Componentes do Player
 import { TrackList } from '@/components/player/TrackList';
@@ -39,7 +39,6 @@ import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 // Componentes da Biblioteca
 import { ArtistList } from '@/components/library/ArtistList';
 import { AlbumList } from '@/components/library/AlbumList';
-import { FolderList } from '@/components/library/FolderList';
 import { PlaylistView } from '@/components/library/PlaylistView';
 import { PlaylistDetail } from '@/components/library/PlaylistDetail';
 import { CategoryDetail } from '@/components/library/CategoryDetail';
@@ -54,10 +53,10 @@ import { Equalizer } from '@/components/player/Equalizer';
 import { Playlist, Track } from '@/types/music';
 
 /** Visualizações disponíveis da biblioteca */
-type LibraryView = 'main' | 'artist' | 'album' | 'folder' | 'playlist' | 'search';
+type LibraryView = 'main' | 'artist' | 'album' | 'playlist' | 'search';
 
 /** Abas de navegação da biblioteca */
-type LibraryTab = 'songs' | 'artists' | 'albums' | 'folders' | 'playlists';
+type LibraryTab = 'songs' | 'artists' | 'albums' | 'playlists';
 
 /**
  * Componente principal da aplicação
@@ -77,7 +76,6 @@ const Index = () => {
   // Estado de seleção para navegação detalhada
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
   // ============================================
@@ -90,8 +88,8 @@ const Index = () => {
   /** Hook da biblioteca - escaneia e gerencia arquivos de música */
   const { tracks, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
   
-  /** Hook de organização - agrupa por artista, álbum, pasta */
-  const { artists, albums, folders, searchTracks } = useLibraryOrganization(tracks);
+  /** Hook de organização - agrupa por artista, álbum */
+  const { artists, albums, searchTracks } = useLibraryOrganization(tracks);
 
   // ============================================
   // Efeitos
@@ -157,12 +155,6 @@ const Index = () => {
     setLibraryView('album');
   };
 
-  /** Navega para os detalhes de uma pasta */
-  const handleFolderSelect = (folder: Folder) => {
-    setSelectedFolder(folder);
-    setLibraryView('folder');
-  };
-
   /** Navega para os detalhes de uma playlist */
   const handlePlaylistSelect = (playlist: Playlist) => {
     setSelectedPlaylist(playlist);
@@ -174,7 +166,6 @@ const Index = () => {
     setLibraryView('main');
     setSelectedArtist(null);
     setSelectedAlbum(null);
-    setSelectedFolder(null);
     setSelectedPlaylist(null);
   };
 
@@ -203,21 +194,6 @@ const Index = () => {
           title={selectedAlbum.name}
           subtitle={selectedAlbum.artist}
           tracks={selectedAlbum.tracks}
-          currentTrack={player.currentTrack}
-          isPlaying={player.isPlaying}
-          onBack={handleBackToMain}
-          onPlayAll={handlePlayAll}
-          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
-        />
-      );
-    }
-
-    if (libraryView === 'folder' && selectedFolder) {
-      return (
-        <CategoryDetail
-          title={selectedFolder.name}
-          subtitle={selectedFolder.path}
-          tracks={selectedFolder.tracks}
           currentTrack={player.currentTrack}
           isPlaying={player.isPlaying}
           onBack={handleBackToMain}
@@ -267,7 +243,6 @@ const Index = () => {
                 { id: 'songs', label: 'Músicas', icon: Music },
                 { id: 'artists', label: 'Artistas', icon: User },
                 { id: 'albums', label: 'Álbuns', icon: Disc },
-                { id: 'folders', label: 'Pastas', icon: FolderOpen },
                 { id: 'playlists', label: 'Playlists', icon: ListMusic },
               ].map(({ id, label, icon: Icon }) => (
                 <Button
@@ -292,7 +267,6 @@ const Index = () => {
                 {libraryTab === 'songs' && `${tracks.length} músicas`}
                 {libraryTab === 'artists' && `${artists.length} artistas`}
                 {libraryTab === 'albums' && `${albums.length} álbuns`}
-                {libraryTab === 'folders' && `${folders.length} pastas`}
                 {libraryTab === 'playlists' && 'Suas playlists'}
               </span>
               {libraryTab === 'songs' && (
@@ -330,9 +304,6 @@ const Index = () => {
                 )}
                 {libraryTab === 'albums' && (
                   <AlbumList albums={albums} onAlbumSelect={handleAlbumSelect} />
-                )}
-                {libraryTab === 'folders' && (
-                  <FolderList folders={folders} onFolderSelect={handleFolderSelect} />
                 )}
                 {libraryTab === 'playlists' && (
                   <PlaylistView onPlaylistSelect={handlePlaylistSelect} />
