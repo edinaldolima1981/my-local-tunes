@@ -238,27 +238,37 @@ export function useAudioPlayer() {
       const restoredQueue = restoreQueue(savedState.queueIds, tracks);
       
       if (restoredQueue.length > 0 && savedState.currentTrack) {
-        // Encontra a faixa salva na nova lista
-        const savedTrackIndex = tracks.findIndex(t => t.id === savedState.currentTrack?.id);
+        // Encontra a faixa salva na nova lista (com uri completo)
+        const savedTrackWithUri = tracks.find(t => t.id === savedState.currentTrack?.id);
         
-        if (savedTrackIndex >= 0) {
-          setQueueIndex(savedTrackIndex);
-          // Carrega a faixa na posição salva, mas não inicia automaticamente
-          audioPlayerService.loadTrack(tracks[savedTrackIndex]);
-          audioPlayerService.seek(savedState.currentTime);
-          setCurrentTrack(tracks[savedTrackIndex]);
+        if (savedTrackWithUri) {
+          const savedTrackIndex = tracks.findIndex(t => t.id === savedState.currentTrack?.id);
+          setQueueIndex(savedTrackIndex >= 0 ? savedTrackIndex : 0);
+          // Define a track COM uri para que o fullscreen funcione
+          setCurrentTrack(savedTrackWithUri);
           setCurrentTime(savedState.currentTime);
+          // Carrega a faixa na posição salva, mas não inicia automaticamente
+          audioPlayerService.loadTrack(savedTrackWithUri);
+          audioPlayerService.seek(savedState.currentTime);
           setIsRestored(true);
-          console.log('[useAudioPlayer] Restored to saved position');
+          console.log('[useAudioPlayer] Restored to saved position with full track data');
           return;
         }
       }
     }
     
     setIsRestored(true);
-    setQueueIndex(startIndex);
-    if (tracks[startIndex]) {
-      playTrackInternal(tracks[startIndex]);
+    // Só inicia reprodução se for uma ação explícita do usuário (startIndex fornecido)
+    // Não auto-play na primeira carga
+    if (startIndex > 0 || !savedStateRef.current) {
+      setQueueIndex(startIndex);
+      if (tracks[startIndex]) {
+        playTrackInternal(tracks[startIndex]);
+      }
+    } else if (tracks.length > 0) {
+      // Na primeira carga sem estado salvo, apenas define a faixa sem tocar
+      setQueueIndex(0);
+      setCurrentTrack(tracks[0]);
     }
   }, [playTrackInternal, isRestored]);
 
