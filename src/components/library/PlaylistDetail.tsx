@@ -5,6 +5,7 @@ import { Track, Playlist } from '@/types/music';
 import { usePlaylists } from '@/hooks/usePlaylists';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { AddToPlaylistDialog } from './AddToPlaylistDialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,7 @@ export function PlaylistDetail({
 }: PlaylistDetailProps) {
   const { removeTrackFromPlaylist, getPlaylist } = usePlaylists();
   const [trackToRemove, setTrackToRemove] = useState<Track | null>(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   // Get fresh playlist data
   const currentPlaylist = getPlaylist(playlist.id) || playlist;
@@ -63,15 +65,25 @@ export function PlaylistDetail({
             {currentPlaylist.tracks.length} {currentPlaylist.tracks.length === 1 ? 'música' : 'músicas'}
           </p>
         </div>
-        {currentPlaylist.tracks.length > 0 && (
+        <div className="flex items-center gap-2">
           <Button
-            onClick={() => onPlayAll(currentPlaylist.tracks)}
-            className="bg-primary text-primary-foreground"
+            variant="outline"
+            size="icon"
+            onClick={() => setShowAddDialog(true)}
+            className="border-primary/50 text-primary hover:bg-primary/10"
           >
-            <Play size={18} className="mr-2" fill="currentColor" />
-            Tocar
+            <Plus size={18} />
           </Button>
-        )}
+          {currentPlaylist.tracks.length > 0 && (
+            <Button
+              onClick={() => onPlayAll(currentPlaylist.tracks)}
+              className="bg-primary text-primary-foreground"
+            >
+              <Play size={18} className="mr-2" fill="currentColor" />
+              Tocar
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Track List */}
@@ -79,7 +91,15 @@ export function PlaylistDetail({
         <div className="flex flex-col items-center justify-center h-40 text-muted-foreground">
           <Music size={40} className="mb-2" />
           <p>Playlist vazia</p>
-          <p className="text-sm">Adicione músicas à sua playlist</p>
+          <p className="text-sm mb-4">Adicione músicas à sua playlist</p>
+          <Button
+            onClick={() => setShowAddDialog(true)}
+            variant="outline"
+            className="border-primary/50 text-primary hover:bg-primary/10"
+          >
+            <Plus size={18} className="mr-2" />
+            Adicionar Músicas
+          </Button>
         </div>
       ) : (
         <ScrollArea className="h-[calc(100vh-380px)]">
@@ -134,6 +154,13 @@ export function PlaylistDetail({
           </div>
         </ScrollArea>
       )}
+
+      {/* Add Songs Dialog */}
+      <AddToPlaylistDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        playlistId={playlist.id}
+      />
 
       {/* Remove Confirmation */}
       <AlertDialog open={!!trackToRemove} onOpenChange={() => setTrackToRemove(null)}>
