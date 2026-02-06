@@ -21,7 +21,8 @@ import {
   ListMusic,
   Music,
   Search,
-  Shield
+  Shield,
+  Settings
 } from 'lucide-react';
 
 // Hooks
@@ -46,6 +47,7 @@ import { CategoryDetail } from '@/components/library/CategoryDetail';
 
 // UI Components
 import { PrivacyInfo } from '@/components/PrivacyInfo';
+import { SettingsDialog } from '@/components/SettingsDialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Equalizer } from '@/components/player/Equalizer';
@@ -71,6 +73,7 @@ const Index = () => {
   const [showVolume, setShowVolume] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [libraryView, setLibraryView] = useState<LibraryView>('main');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
   const [highlightedTrackId, setHighlightedTrackId] = useState<string | null>(null);
@@ -390,6 +393,14 @@ const Index = () => {
               <Button
                 variant="ghost"
                 size="icon"
+                onClick={() => setShowSettings(true)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Settings size={20} />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowPrivacy(true)}
                 className="text-muted-foreground hover:text-foreground"
               >
@@ -500,6 +511,9 @@ const Index = () => {
 
       {/* Privacy Info Dialog */}
       <PrivacyInfo isOpen={showPrivacy} onClose={() => setShowPrivacy(false)} />
+      
+      {/* Settings Dialog */}
+      <SettingsDialog open={showSettings} onOpenChange={setShowSettings} />
     </div>
   );
 };
