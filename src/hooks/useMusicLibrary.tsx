@@ -15,9 +15,29 @@ interface MusicLibraryContextType {
   deleteTrack: (trackId: string) => void;
   deleteTracksByArtist: (artistName: string) => void;
   deleteTracksByAlbum: (albumName: string, artistName: string) => void;
+  addTracksFromFiles: (files: FileList) => void;
 }
 
 const MusicLibraryContext = createContext<MusicLibraryContextType | null>(null);
+
+// Gera um ID único para a track
+function generateTrackId(fileName: string): string {
+  return `file-${fileName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// Extrai metadados básicos do nome do arquivo
+function parseFileName(fileName: string): { title: string; artist: string } {
+  // Remove extensão
+  const nameWithoutExt = fileName.replace(/\.[^.]+$/, '');
+  
+  // Tenta extrair artista - título (formato comum)
+  const dashMatch = nameWithoutExt.match(/^(.+?)\s*[-–]\s*(.+)$/);
+  if (dashMatch) {
+    return { artist: dashMatch[1].trim(), title: dashMatch[2].trim() };
+  }
+  
+  return { title: nameWithoutExt, artist: 'Artista Desconhecido' };
+}
 
 export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -96,6 +116,45 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     ));
   };
 
+  // Adiciona músicas a partir de arquivos selecionados pelo usuário
+  const addTracksFromFiles = (files: FileList) => {
+    const newTracks: Track[] = [];
+
+    Array.from(files).forEach((file) => {
+      // Verifica se é um arquivo de áudio
+      if (!file.type.startsWith('audio/')) return;
+
+      const { title, artist } = parseFileName(file.name);
+      const objectUrl = URL.createObjectURL(file);
+
+      const track: Track = {
+        id: generateTrackId(file.name),
+        title,
+        artist,
+        album: 'Músicas Importadas',
+        duration: 0, // Será atualizado quando o áudio carregar
+        uri: objectUrl,
+        coverUrl: undefined,
+      };
+
+      // Tenta obter a duração do áudio
+      const audio = new Audio(objectUrl);
+      audio.addEventListener('loadedmetadata', () => {
+        setTracks(prevTracks => 
+          prevTracks.map(t => 
+            t.id === track.id ? { ...t, duration: audio.duration } : t
+          )
+        );
+      });
+
+      newTracks.push(track);
+    });
+
+    if (newTracks.length > 0) {
+      setTracks(prevTracks => [...prevTracks, ...newTracks]);
+    }
+  };
+
   return (
     <MusicLibraryContext.Provider
       value={{
@@ -109,6 +168,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         deleteTrack,
         deleteTracksByArtist,
         deleteTracksByAlbum,
+        addTracksFromFiles,
       }}
     >
       {children}
