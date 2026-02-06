@@ -202,6 +202,7 @@ const Index = () => {
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
           onTrackDoubleClick={handleGoToSongsWithHighlight}
+          onOpenFullscreen={() => setShowFullscreen(true)}
         />
       );
     }
@@ -218,6 +219,7 @@ const Index = () => {
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
           onTrackDoubleClick={handleGoToSongsWithHighlight}
+          onOpenFullscreen={() => setShowFullscreen(true)}
           isAlbumView={true}
           albumName={selectedAlbum.name}
           albumArtist={selectedAlbum.artist}
@@ -235,6 +237,7 @@ const Index = () => {
           onPlayAll={handlePlayAll}
           onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
           onTrackDoubleClick={handleGoToSongsWithHighlight}
+          onOpenFullscreen={() => setShowFullscreen(true)}
         />
       );
     }

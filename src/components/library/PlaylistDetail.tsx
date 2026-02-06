@@ -24,6 +24,7 @@ interface PlaylistDetailProps {
   onPlayAll: (tracks: Track[]) => void;
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
   onTrackDoubleClick?: (track: Track) => void;
+  onOpenFullscreen?: () => void;
 }
 
 export function PlaylistDetail({
@@ -34,6 +35,7 @@ export function PlaylistDetail({
   onPlayAll,
   onTrackSelect,
   onTrackDoubleClick,
+  onOpenFullscreen,
 }: PlaylistDetailProps) {
   const { removeTrackFromPlaylist, getPlaylist } = usePlaylists();
   const [trackToRemove, setTrackToRemove] = useState<Track | null>(null);
@@ -96,7 +98,10 @@ export function PlaylistDetail({
                   }`}
                 >
                   <button
-                    onClick={() => onTrackSelect(track, index, currentPlaylist.tracks)}
+                    onClick={() => {
+                      onTrackSelect(track, index, currentPlaylist.tracks);
+                      onOpenFullscreen?.();
+                    }}
                     onDoubleClick={() => onTrackDoubleClick?.(track)}
                     className="flex-1 flex items-center gap-3 text-left"
                   >
