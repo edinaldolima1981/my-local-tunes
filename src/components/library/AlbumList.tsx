@@ -79,7 +79,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
     coverInputRef.current?.click();
   };
 
-  const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCoverChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && albumForCover) {
       // Verifica se é uma imagem
@@ -88,12 +88,40 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
         return;
       }
       
-      const coverUrl = URL.createObjectURL(file);
-      updateAlbumCover(albumForCover.name, albumForCover.artist, coverUrl);
-      toast.success(`Capa do álbum "${albumForCover.name}" atualizada!`);
+      try {
+        // Converte para Data URL persistente (sobrevive ao refresh)
+        const coverDataUrl = await imageToDataUrl(file);
+        updateAlbumCover(albumForCover.name, albumForCover.artist, coverDataUrl);
+        toast.success(`Capa do álbum "${albumForCover.name}" atualizada!`);
+      } catch (error) {
+        toast.error('Erro ao processar a imagem');
+      }
     }
     e.target.value = '';
     setAlbumForCover(null);
+  };
+  
+  // Converte imagem para Data URL comprimida
+  const imageToDataUrl = (file: File, maxWidth = 400): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ratio = Math.min(maxWidth / img.width, maxWidth / img.height, 1);
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.7));
+        };
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   return (
