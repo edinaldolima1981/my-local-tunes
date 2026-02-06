@@ -1,73 +1,108 @@
-# Welcome to your Lovable project
+# 🎵 Music Player
 
-## Project info
+Player de música **offline** e **multiplataforma** para Android e iOS.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+![React](https://img.shields.io/badge/React-18-blue)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
+![Capacitor](https://img.shields.io/badge/Capacitor-8-green)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## ✨ Funcionalidades
 
-**Use Lovable**
+- 🎵 Reprodução de MP3, WAV, FLAC, AAC, OGG, M4A
+- 📁 Organização por Artista, Álbum e Pasta
+- 📝 Playlists personalizadas
+- 🔍 Busca por nome, artista ou álbum
+- 🔀 Shuffle e Repeat
+- 🔒 100% offline - sem coleta de dados
+- 🎨 Interface moderna com animações suaves
+- 📱 Controles via lock screen e notificações
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📂 Estrutura do Projeto
 
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+music-player/
+├── src/
+│   ├── components/           # Componentes React
+│   │   ├── library/          # Biblioteca (artistas, álbuns, playlists)
+│   │   ├── player/           # Player (controles, progresso, etc)
+│   │   └── ui/               # Componentes shadcn/ui
+│   │
+│   ├── hooks/                # React Hooks customizados
+│   │   ├── useAudioPlayer.ts       # Estado do player
+│   │   ├── useMusicLibrary.tsx     # Scanner de músicas
+│   │   ├── usePlaylists.tsx        # Gerenciamento de playlists
+│   │   └── useLibraryOrganization.ts # Agrupamento por categoria
+│   │
+│   ├── services/             # Serviços de negócio
+│   │   ├── audioPlayerService.ts     # Reprodução de áudio
+│   │   ├── backgroundAudioService.ts # Áudio em background
+│   │   ├── musicScanner.ts           # Scanner de arquivos
+│   │   └── playlistService.ts        # CRUD de playlists
+│   │
+│   ├── pages/                # Páginas/Telas
+│   ├── types/                # Tipos TypeScript
+│   └── assets/               # Recursos estáticos
+│
+├── android/                  # Projeto Android (após npx cap add android)
+├── ios/                      # Projeto iOS (após npx cap add ios)
+├── capacitor.config.ts       # Configuração Capacitor
+└── INSTALL.md                # Guia detalhado de build
 ```
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🚀 Quick Start
 
-**Use GitHub Codespaces**
+```bash
+npm install          # Instalar dependências
+npm run dev          # Desenvolvimento
+npm run build        # Build produção
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 📲 Build Android (APK)
 
-This project is built with:
+```bash
+npm run build                 # Build web
+npx cap add android           # Adicionar plataforma (1ª vez)
+npx cap sync android          # Sincronizar
+npx cap open android          # Abrir Android Studio
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+No Android Studio: **Build > Generate Signed Bundle / APK**
 
-## How can I deploy this project?
+APK gerado em: `android/app/build/outputs/apk/`
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+---
 
-## Can I connect a custom domain to my Lovable project?
+## 🍎 Build iOS (IPA)
 
-Yes, you can!
+```bash
+npm run build                 # Build web
+npx cap add ios               # Adicionar plataforma (1ª vez)
+npx cap sync ios              # Sincronizar
+npx cap open ios              # Abrir Xcode
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+No Xcode: **Product > Archive > Distribute App**
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🔒 Privacidade
+
+- ❌ Sem conexão de internet
+- ❌ Sem coleta de dados
+- ❌ Sem analytics ou rastreamento
+- ✅ 100% offline
+
+---
+
+## 📄 Documentação
+
+- [INSTALL.md](INSTALL.md) - Guia completo de instalação e build
+- [PRIVACY.md](PRIVACY.md) - Política de privacidade
