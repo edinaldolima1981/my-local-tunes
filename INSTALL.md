@@ -1,121 +1,169 @@
-# Music Player - Instalação e Privacidade
+# Music Player - Guia de Instalação
+
+## 📱 Sobre o Projeto
+
+Player de música **multiplataforma** desenvolvido com **React + Capacitor**, criando aplicativos nativos para Android e iOS a partir de uma única base de código.
+
+### Tecnologias
+
+| Stack | Tecnologia |
+|-------|------------|
+| Frontend | React 18 + TypeScript + Vite |
+| UI | Tailwind CSS + shadcn/ui + Framer Motion |
+| Mobile | **Capacitor** (wrapper nativo Android/iOS) |
+| Áudio | HTML5 Audio API + Media Session API |
+
+---
 
 ## 🔒 Privacidade e Segurança
-
-Este aplicativo foi projetado com foco total em privacidade:
 
 - ✅ **100% Offline** - Funciona sem internet
 - ✅ **Sem coleta de dados** - Nenhuma informação é enviada
 - ✅ **Sem login/cadastro** - Use imediatamente
 - ✅ **Sem analytics** - Nenhum rastreamento
-- ✅ **Sem anúncios** - Experiência limpa
 - ✅ **Permissões mínimas** - Apenas acesso aos arquivos de música
 
-## Pré-requisitos
+---
 
-- Node.js 18+
-- Android Studio (para Android)
-- Xcode (para iOS - apenas Mac)
+## 🚀 Desenvolvimento Local (Web)
 
-## Instalação
-
-1. **Clone o repositório:**
-```bash
-git clone <seu-repositorio>
-cd <nome-do-projeto>
-```
-
-2. **Instale as dependências:**
 ```bash
 npm install
+npm run dev      # Desenvolvimento
+npm run build    # Produção
 ```
 
-3. **Adicione as plataformas nativas:**
+---
+
+## 📲 Build para Android
+
+### Pré-requisitos
+
+1. **Android Studio** (https://developer.android.com/studio)
+2. **Java JDK 17+**
+3. **Android SDK** API Level 33+
+
+### Passos
+
 ```bash
+# 1. Instalar dependências
+npm install
+
+# 2. Adicionar plataforma Android (primeira vez)
 npx cap add android
-npx cap add ios  # apenas Mac
+
+# 3. Build do projeto web
+npm run build
+
+# 4. Sincronizar com projeto nativo
+npx cap sync android
+
+# 5. Abrir no Android Studio
+npx cap open android
 ```
 
-4. **Configure permissões (Android):**
+### Gerar APK/AAB
 
-Edite `android/app/src/main/AndroidManifest.xml` e adicione antes de `<application>`:
+No Android Studio: **Build > Generate Signed Bundle/APK**
 
+---
+
+## 🍎 Build para iOS
+
+### Pré-requisitos
+
+1. **macOS** (obrigatório)
+2. **Xcode 15+**
+3. **Conta de Desenvolvedor Apple** (para dispositivos reais)
+
+### Passos
+
+```bash
+npm install
+npx cap add ios
+npm run build
+npx cap sync ios
+npx cap open ios
+```
+
+---
+
+## 🔊 Recursos de Áudio
+
+### Background Audio
+
+O app suporta reprodução quando:
+- Tela desligada
+- App em segundo plano
+- Outros apps em uso
+
+### Controles do Sistema
+
+- **Android**: Notificação de mídia, lock screen
+- **iOS**: Control Center, lock screen, AirPods
+- **Web**: Media Session API
+
+### Formatos Suportados
+
+| Formato | Android | iOS | Web |
+|---------|---------|-----|-----|
+| MP3     | ✅      | ✅  | ✅  |
+| AAC/M4A | ✅      | ✅  | ✅  |
+| WAV     | ✅      | ✅  | ✅  |
+| FLAC    | ✅      | ✅  | ⚠️  |
+| OGG     | ✅      | ⚠️  | ✅  |
+
+---
+
+## 🔒 Permissões Necessárias
+
+### Android
 ```xml
-<!-- Acesso a arquivos de áudio (Android 12 e inferior) -->
-<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" 
-    android:maxSdkVersion="32" />
-
-<!-- Acesso específico a áudio (Android 13+) -->
 <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-
-<!-- Reprodução em segundo plano -->
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-
-<!-- Manter reprodução com tela desligada -->
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 ```
 
-**IMPORTANTE:** O app NÃO solicita `INTERNET` nem nenhuma outra permissão.
-
-5. **Build e sync:**
-```bash
-npm run build
-npx cap sync
+### iOS
+```xml
+<key>NSAppleMusicUsageDescription</key>
+<key>UIBackgroundModes</key><array><string>audio</string></array>
 ```
 
-6. **Execute no dispositivo:**
-```bash
-npx cap run android
-# ou
-npx cap run ios
+---
+
+## 🛠️ Hot Reload (Dev)
+
+Descomente em `capacitor.config.ts`:
+
+```typescript
+server: {
+  url: 'http://SEU_IP:5173',
+  cleartext: true
+},
 ```
 
-## Funcionalidades
+**⚠️ Remova antes do build de produção!**
 
-✅ 100% Offline - Sem conexão de internet  
-✅ Escaneia pastas Music, Download, DCIM, Audio  
-✅ Suporta MP3, WAV, FLAC, AAC, OGG, M4A  
-✅ Player com Play/Pause, Próxima/Anterior  
-✅ Barra de progresso interativa  
-✅ Reprodução em segundo plano  
-✅ Controle pela tela de bloqueio  
-✅ Shuffle e Repeat  
-✅ Playlists locais  
-✅ Organização por Artista/Álbum/Pasta  
-✅ Busca de músicas  
+---
 
-## Dados Armazenados Localmente
+## 📦 Estrutura
 
-Os únicos dados salvos são:
-- Suas playlists (em `localStorage`)
-- Preferências de reprodução
-
-**Nenhum dado sai do seu dispositivo.**
-
-## Estrutura de Pastas Escaneadas
-
-O app procura músicas nas seguintes pastas:
-- `/Music`
-- `/Download`
-- `/Downloads`
-- `/DCIM`
-- `/Audio`
-- `/Documents`
-
-## Transferindo Músicas
-
-Para adicionar músicas ao app:
-
-1. Conecte o celular ao computador via USB
-2. Copie os arquivos de áudio para uma das pastas acima
-3. Abra o app e clique em "Atualizar" na aba Biblioteca
-
-## Formato de Nome Recomendado
-
-Para melhor organização, nomeie seus arquivos assim:
 ```
-Artista - Nome da Música.mp3
+├── src/services/       # Áudio, scanner, playlists
+├── src/components/     # UI components
+├── android/            # Projeto nativo Android
+├── ios/                # Projeto nativo iOS
+└── capacitor.config.ts # Config Capacitor
 ```
 
-O app irá extrair automaticamente o artista e título.
+---
+
+## 🐛 Solução de Problemas
+
+| Problema | Solução |
+|----------|---------|
+| Permissão negada | Verifique `READ_MEDIA_AUDIO` (Android 13+) |
+| Áudio para em background | Confirme `FOREGROUND_SERVICE_MEDIA_PLAYBACK` |
+| Build falha | `rm -rf node_modules && npm install && npx cap sync` |
