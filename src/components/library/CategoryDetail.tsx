@@ -25,7 +25,8 @@ interface CategoryDetailProps {
   onBack: () => void;
   onPlayAll: (tracks: Track[]) => void;
   onTrackSelect: (track: Track, index: number, tracks: Track[]) => void;
-  onTrackDoubleClick?: (track: Track) => void; // Novo: duplo clique para ir à aba músicas
+  onTrackDoubleClick?: (track: Track) => void; // Duplo clique para ir à aba músicas
+  onOpenFullscreen?: () => void; // Abre player fullscreen após selecionar
   isAlbumView?: boolean;
   albumName?: string;
   albumArtist?: string;
@@ -41,6 +42,7 @@ export function CategoryDetail({
   onPlayAll,
   onTrackSelect,
   onTrackDoubleClick,
+  onOpenFullscreen,
   isAlbumView = false,
   albumName,
   albumArtist,
@@ -185,7 +187,11 @@ export function CategoryDetail({
                 }`}
               >
                 <button
-                  onClick={() => onTrackSelect(track, index, tracks)}
+                  onClick={() => {
+                    onTrackSelect(track, index, tracks);
+                    // Abre o fullscreen player após selecionar a música
+                    onOpenFullscreen?.();
+                  }}
                   onDoubleClick={() => onTrackDoubleClick?.(track)}
                   className="flex-1 flex items-center gap-3 text-left"
                 >
