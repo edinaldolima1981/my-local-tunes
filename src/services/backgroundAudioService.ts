@@ -1,28 +1,41 @@
+/**
+ * @fileoverview Serviço de áudio em background
+ * 
+ * Este serviço gerencia a reprodução de áudio quando o app está em segundo plano:
+ * - Wake Lock para manter o dispositivo ativo durante reprodução
+ * - Media Session API para controles do sistema operacional
+ * - Suporte a Android (notificação) e iOS (Control Center)
+ */
+
 import { Capacitor } from '@capacitor/core';
 import { Track } from '@/types/music';
 
 /**
- * Background Audio Service
- * Handles native platform-specific audio configurations for background playback
+ * Serviço para gerenciar reprodução em background
+ * Implementa Wake Lock e Media Session API
  */
 class BackgroundAudioService {
+  /** Referência ao wake lock (mantém dispositivo ativo) */
   private wakeLock: WakeLockSentinel | null = null;
+  
+  /** Flag indicando se o serviço foi inicializado */
   private isBackgroundEnabled = false;
 
   /**
-   * Initialize background audio capabilities
+   * Inicializa as capacidades de áudio em background
+   * Deve ser chamado uma vez ao iniciar o player
    */
   async initialize(): Promise<void> {
     const platform = Capacitor.getPlatform();
     
     console.log(`[BackgroundAudio] Initializing for platform: ${platform}`);
 
-    // Request wake lock for screen-off playback (web/PWA)
+    // Request wake lock para reprodução com tela desligada (web/PWA)
     if ('wakeLock' in navigator) {
       await this.requestWakeLock();
     }
 
-    // Setup visibility change handler
+    // Setup handler para mudança de visibilidade
     document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
 
     this.isBackgroundEnabled = true;
@@ -30,11 +43,13 @@ class BackgroundAudioService {
   }
 
   /**
-   * Request a wake lock to prevent device sleep during playback
+   * Solicita um wake lock para evitar que o dispositivo durma
+   * durante a reprodução de áudio
    */
   private async requestWakeLock(): Promise<void> {
     try {
       if ('wakeLock' in navigator) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.wakeLock = await (navigator as any).wakeLock.request('screen');
         console.log('[BackgroundAudio] Wake lock acquired');
 
@@ -48,7 +63,7 @@ class BackgroundAudioService {
   }
 
   /**
-   * Release wake lock
+   * Libera o wake lock (chamado quando o player para)
    */
   async releaseWakeLock(): Promise<void> {
     if (this.wakeLock) {
@@ -58,11 +73,11 @@ class BackgroundAudioService {
   }
 
   /**
-   * Handle visibility changes (app going to background)
+   * Trata mudanças de visibilidade (app indo para background)
+   * Reacquire wake lock quando o app volta ao foreground
    */
   private handleVisibilityChange(): void {
     if (document.visibilityState === 'visible') {
-      // App came to foreground - reacquire wake lock if needed
       if (this.isBackgroundEnabled && !this.wakeLock) {
         this.requestWakeLock();
       }
@@ -70,11 +85,17 @@ class BackgroundAudioService {
   }
 
   /**
-   * Update Now Playing info for native OS controls
+   * Atualiza as informações "Now Playing" para controles do SO
+   * Isso atualiza a notificação no Android e Control Center no iOS
+   * 
+   * @param track - Faixa atual
+   * @param isPlaying - Se está tocando
+   * @param position - Posição atual em segundos
+   * @param duration - Duração total em segundos
    */
   updateNowPlaying(track: Track, isPlaying: boolean, position: number, duration: number): void {
     if ('mediaSession' in navigator) {
-      // Update metadata
+      // Atualiza metadados
       navigator.mediaSession.metadata = new MediaMetadata({
         title: track.title,
         artist: track.artist,
@@ -91,10 +112,10 @@ class BackgroundAudioService {
           : [],
       });
 
-      // Update playback state
+      // Atualiza estado de reprodução
       navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
 
-      // Update position state
+      // Atualiza posição (alguns navegadores suportam)
       try {
         navigator.mediaSession.setPositionState({
           duration: duration || 0,
@@ -102,13 +123,16 @@ class BackgroundAudioService {
           position: Math.min(position, duration || 0),
         });
       } catch (e) {
-        // Some browsers don't support setPositionState
+        // Alguns navegadores não suportam setPositionState
       }
     }
   }
 
   /**
-   * Register media session action handlers
+   * Registra handlers para ações da Media Session
+   * Estes handlers respondem a controles do lock screen, fones, etc.
+   * 
+   * @param handlers - Objeto com callbacks para cada ação
    */
   registerActionHandlers(handlers: {
     onPlay?: () => void;
@@ -124,6 +148,7 @@ class BackgroundAudioService {
 
     const session = navigator.mediaSession;
 
+    // Registra cada handler se fornecido
     if (handlers.onPlay) {
       session.setActionHandler('play', handlers.onPlay);
     }
@@ -161,7 +186,8 @@ class BackgroundAudioService {
   }
 
   /**
-   * Get platform info
+   * Retorna informações sobre a plataforma atual
+   * Útil para lógica condicional baseada em plataforma
    */
   getPlatformInfo(): { platform: string; isNative: boolean } {
     const platform = Capacitor.getPlatform();
@@ -172,4 +198,5 @@ class BackgroundAudioService {
   }
 }
 
+// Exporta instância singleton do serviço
 export const backgroundAudioService = new BackgroundAudioService();

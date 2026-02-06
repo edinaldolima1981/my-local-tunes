@@ -1,3 +1,14 @@
+/**
+ * @fileoverview Página principal do Music Player
+ * 
+ * Esta é a tela principal do aplicativo, contendo:
+ * - Header com logo e controles
+ * - Navegação por abas (Músicas, Artistas, Álbuns, Pastas, Playlists)
+ * - Barra de busca
+ * - Mini Player (quando há música tocando)
+ * - Player em tela cheia (modal)
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -12,91 +23,152 @@ import {
   Search,
   Shield
 } from 'lucide-react';
+
+// Hooks
 import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { useLibraryOrganization, Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
+
+// Componentes do Player
 import { TrackList } from '@/components/player/TrackList';
 import { SearchBar } from '@/components/player/SearchBar';
 import { VolumeControl } from '@/components/player/VolumeControl';
 import { MiniPlayer } from '@/components/player/MiniPlayer';
 import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
+
+// Componentes da Biblioteca
 import { ArtistList } from '@/components/library/ArtistList';
 import { AlbumList } from '@/components/library/AlbumList';
 import { FolderList } from '@/components/library/FolderList';
 import { PlaylistView } from '@/components/library/PlaylistView';
 import { PlaylistDetail } from '@/components/library/PlaylistDetail';
 import { CategoryDetail } from '@/components/library/CategoryDetail';
+
+// UI Components
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+
+// Types
 import { Playlist, Track } from '@/types/music';
 
+/** Visualizações disponíveis da biblioteca */
 type LibraryView = 'main' | 'artist' | 'album' | 'folder' | 'playlist' | 'search';
+
+/** Abas de navegação da biblioteca */
 type LibraryTab = 'songs' | 'artists' | 'albums' | 'folders' | 'playlists';
 
+/**
+ * Componente principal da aplicação
+ * Gerencia o estado da UI e coordena os sub-componentes
+ */
 const Index = () => {
+  // ============================================
+  // Estado da UI
+  // ============================================
   const [searchQuery, setSearchQuery] = useState('');
   const [showVolume, setShowVolume] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [libraryView, setLibraryView] = useState<LibraryView>('main');
   const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
+  
+  // Estado de seleção para navegação detalhada
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
   const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
 
+  // ============================================
+  // Hooks
+  // ============================================
+  
+  /** Hook do player de áudio - controla reprodução, fila, etc */
   const player = useAudioPlayer();
+  
+  /** Hook da biblioteca - escaneia e gerencia arquivos de música */
   const { tracks, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
+  
+  /** Hook de organização - agrupa por artista, álbum, pasta */
   const { artists, albums, folders, searchTracks } = useLibraryOrganization(tracks);
 
-  // Auto-load queue when tracks change
+  // ============================================
+  // Efeitos
+  // ============================================
+
+  /**
+   * Carrega a fila de reprodução quando as músicas são escaneadas
+   * Isso permite que o usuário comece a tocar imediatamente
+   */
   useEffect(() => {
     if (tracks.length > 0 && player.queue.length === 0) {
       player.loadQueue(tracks, 0);
     }
   }, [tracks]);
 
+  // ============================================
+  // Dados Derivados
+  // ============================================
+
+  /** Filtra músicas baseado na busca do usuário */
   const filteredTracks = useMemo(() => {
     return searchTracks(searchQuery);
   }, [searchQuery, searchTracks]);
 
+  // ============================================
+  // Handlers
+  // ============================================
+
+  /**
+   * Seleciona uma música da lista filtrada
+   * Encontra o índice original para manter a fila correta
+   */
   const handleTrackSelect = (index: number) => {
     const track = filteredTracks[index];
     const originalIndex = tracks.findIndex(t => t.id === track.id);
     player.loadQueue(tracks, originalIndex);
   };
 
+  /**
+   * Reproduz a partir de uma categoria (artista, álbum, etc)
+   * Carrega apenas as músicas daquela categoria
+   */
   const handlePlayFromCategory = (categoryTracks: Track[], index: number) => {
     player.loadQueue(categoryTracks, index);
   };
 
+  /** Reproduz todas as músicas de uma categoria */
   const handlePlayAll = (tracksToPlay: Track[]) => {
     if (tracksToPlay.length > 0) {
       player.loadQueue(tracksToPlay, 0);
     }
   };
 
+  /** Navega para os detalhes de um artista */
   const handleArtistSelect = (artist: Artist) => {
     setSelectedArtist(artist);
     setLibraryView('artist');
   };
 
+  /** Navega para os detalhes de um álbum */
   const handleAlbumSelect = (album: Album) => {
     setSelectedAlbum(album);
     setLibraryView('album');
   };
 
+  /** Navega para os detalhes de uma pasta */
   const handleFolderSelect = (folder: Folder) => {
     setSelectedFolder(folder);
     setLibraryView('folder');
   };
 
+  /** Navega para os detalhes de uma playlist */
   const handlePlaylistSelect = (playlist: Playlist) => {
     setSelectedPlaylist(playlist);
     setLibraryView('playlist');
   };
 
+  /** Volta para a visualização principal da biblioteca */
   const handleBackToMain = () => {
     setLibraryView('main');
     setSelectedArtist(null);
@@ -105,6 +177,7 @@ const Index = () => {
     setSelectedPlaylist(null);
   };
 
+  /** Calcula o progresso da música atual (0 a 1) */
   const progress = player.duration > 0 ? player.currentTime / player.duration : 0;
 
   const renderLibraryContent = () => {
