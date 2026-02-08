@@ -21,7 +21,8 @@ import {
   ListMusic,
   Music,
   Search,
-  Shield
+  Shield,
+  Heart
 } from 'lucide-react';
 
 // Hooks
@@ -43,6 +44,7 @@ import { AlbumList } from '@/components/library/AlbumList';
 import { PlaylistView } from '@/components/library/PlaylistView';
 import { PlaylistDetail } from '@/components/library/PlaylistDetail';
 import { CategoryDetail } from '@/components/library/CategoryDetail';
+import { FavoritesList } from '@/components/library/FavoritesList';
 
 // UI Components
 import { PrivacyInfo } from '@/components/PrivacyInfo';
@@ -57,7 +59,7 @@ import { Playlist, Track } from '@/types/music';
 type LibraryView = 'main' | 'artist' | 'album' | 'playlist' | 'search';
 
 /** Abas de navegação da biblioteca */
-type LibraryTab = 'songs' | 'artists' | 'albums' | 'playlists';
+type LibraryTab = 'songs' | 'favorites' | 'artists' | 'albums' | 'playlists';
 
 /**
  * Componente principal da aplicação
@@ -280,6 +282,7 @@ const Index = () => {
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
               {[
                 { id: 'songs', label: 'Músicas', icon: Music },
+                { id: 'favorites', label: 'Favoritos', icon: Heart },
                 { id: 'artists', label: 'Artistas', icon: User },
                 { id: 'albums', label: 'Álbuns', icon: Disc },
                 { id: 'playlists', label: 'Playlists', icon: ListMusic },
@@ -304,6 +307,7 @@ const Index = () => {
             <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
               <span>
                 {libraryTab === 'songs' && `${tracks.length} músicas`}
+                {libraryTab === 'favorites' && 'Suas músicas favoritas'}
                 {libraryTab === 'artists' && `${artists.length} artistas`}
                 {libraryTab === 'albums' && `${albums.length} álbuns`}
                 {libraryTab === 'playlists' && 'Suas playlists'}
@@ -333,6 +337,15 @@ const Index = () => {
                 {libraryTab === 'songs' && (
                   <TrackList
                     tracks={tracks}
+                    currentTrack={player.currentTrack}
+                    isPlaying={player.isPlaying}
+                    onTrackSelect={handleTrackSelect}
+                    highlightedTrackId={highlightedTrackId}
+                  />
+                )}
+                {libraryTab === 'favorites' && (
+                  <FavoritesList
+                    allTracks={tracks}
                     currentTrack={player.currentTrack}
                     isPlaying={player.isPlaying}
                     onTrackSelect={handleTrackSelect}
