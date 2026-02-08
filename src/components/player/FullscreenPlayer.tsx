@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Heart, Share2, MoreHorizontal, ListMusic } from 'lucide-react';
+import { ChevronDown, Heart, ListMusic } from 'lucide-react';
 import { Track, RepeatMode } from '@/types/music';
 import { AlbumArt } from './AlbumArt';
 import { ProgressBar } from './ProgressBar';
 import { PlayerControls } from './PlayerControls';
 import { VideoPlayer } from './VideoPlayer';
 import { Button } from '@/components/ui/button';
+import { useFavorites } from '@/hooks/useFavorites';
 
 interface FullscreenPlayerProps {
   isOpen: boolean;
@@ -42,6 +43,9 @@ export function FullscreenPlayer({
   onToggleRepeat,
   onShowQueue,
 }: FullscreenPlayerProps) {
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const isCurrentFavorite = track ? isFavorite(track.id) : false;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -135,9 +139,20 @@ export function FullscreenPlayer({
                       {track?.artist || 'Selecione uma música'}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary ml-4">
-                    <Heart size={24} />
-                  </Button>
+                  <motion.div whileTap={{ scale: 0.9 }}>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      onClick={() => track && toggleFavorite(track.id)}
+                      className={`ml-4 transition-colors ${
+                        isCurrentFavorite 
+                          ? 'text-red-500 hover:text-red-400' 
+                          : 'text-muted-foreground hover:text-primary'
+                      }`}
+                    >
+                      <Heart size={24} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
+                    </Button>
+                  </motion.div>
                 </div>
 
                 {/* Progress Bar */}
@@ -163,15 +178,6 @@ export function FullscreenPlayer({
                   />
                 </div>
 
-                {/* Extra Actions */}
-                <div className="flex items-center justify-center gap-8">
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
-                    <Share2 size={20} />
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground">
-                    <MoreHorizontal size={20} />
-                  </Button>
-                </div>
               </div>
             </div>
           </motion.div>

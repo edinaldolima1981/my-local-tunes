@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MusicLibraryProvider } from "@/hooks/useMusicLibrary";
 import { PlaylistProvider } from "@/hooks/usePlaylists";
+import { FavoritesProvider } from "@/hooks/useFavorites";
 import { SplashScreen } from "@/components/welcome/SplashScreen";
 import { Onboarding } from "@/components/welcome/Onboarding";
 import Index from "./pages/Index";
@@ -56,16 +57,18 @@ const App = () => {
         {isReady && (
           <MusicLibraryProvider>
             <PlaylistProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
+              <FavoritesProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </BrowserRouter>
+              </FavoritesProvider>
             </PlaylistProvider>
           </MusicLibraryProvider>
         )}
