@@ -81,6 +81,7 @@ async function scanDirectory(
               album: trackInfo.album || 'Álbum Desconhecido',
               duration: 0, // Will be updated when played
               uri: Capacitor.convertFileSrc(uri.uri),
+              mediaType: 'audio',
             });
 
             scannedCount++;

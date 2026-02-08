@@ -11,6 +11,7 @@ export const mockTracks: Track[] = [
     duration: 234,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '2',
@@ -20,6 +21,7 @@ export const mockTracks: Track[] = [
     duration: 198,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '3',
@@ -29,6 +31,7 @@ export const mockTracks: Track[] = [
     duration: 267,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '4',
@@ -38,6 +41,7 @@ export const mockTracks: Track[] = [
     duration: 212,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '5',
@@ -47,6 +51,7 @@ export const mockTracks: Track[] = [
     duration: 289,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '6',
@@ -56,6 +61,7 @@ export const mockTracks: Track[] = [
     duration: 178,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '7',
@@ -65,6 +71,7 @@ export const mockTracks: Track[] = [
     duration: 245,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
   {
     id: '8',
@@ -74,5 +81,6 @@ export const mockTracks: Track[] = [
     duration: 203,
     uri: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
     coverUrl: defaultCover,
+    mediaType: 'audio',
   },
 ];
