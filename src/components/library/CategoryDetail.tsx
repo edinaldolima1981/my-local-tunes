@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Play, Plus, Music, ListPlus, Upload } from 'lucide-react';
+import { ArrowLeft, Play, Plus, Music, ListPlus, Upload, Trash2 } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Artist, Album, Folder } from '@/hooks/useLibraryOrganization';
 import { usePlaylists } from '@/hooks/usePlaylists';
@@ -15,6 +15,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface CategoryDetailProps {
   title: string;
@@ -48,7 +59,7 @@ export function CategoryDetail({
   albumArtist,
 }: CategoryDetailProps) {
   const { playlists, addTrackToPlaylist, createPlaylist } = usePlaylists();
-  const { addTracksFromFiles } = useMusicLibrary();
+  const { addTracksFromFiles, deleteTrack } = useMusicLibrary();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAddToPlaylist, setShowAddToPlaylist] = useState(false);
   const [trackToAdd, setTrackToAdd] = useState<Track | null>(null);
@@ -105,6 +116,12 @@ export function CategoryDetail({
     e.target.value = '';
   };
 
+  const handleDeleteTrack = (track: Track, e: React.MouseEvent) => {
+    e.stopPropagation();
+    deleteTrack(track.id);
+    toast.success(`"${track.title}" removida da biblioteca`);
+  };
+
   return (
     <div className="space-y-4">
       {/* Input hidden para importar músicas */}
@@ -144,7 +161,7 @@ export function CategoryDetail({
               Importar
             </Button>
           )}
-          
+
           {tracks.length > 0 && (
             <>
               <Button
@@ -182,9 +199,8 @@ export function CategoryDetail({
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.03 }}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                  isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary/50'
-                }`}
+                className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${isActive ? 'bg-primary/10 border border-primary/30' : 'hover:bg-secondary/50'
+                  }`}
               >
                 <button
                   onClick={() => {
@@ -212,15 +228,48 @@ export function CategoryDetail({
                   </div>
                 </button>
 
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={() => openAddToPlaylist(track)}
-                  title="Adicionar à playlist"
-                >
-                  <Plus size={16} />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => openAddToPlaylist(track)}
+                    title="Adicionar à playlist"
+                  >
+                    <Plus size={16} />
+                  </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={(e) => e.stopPropagation()}
+                        title="Excluir música"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-card border-border">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir música?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          A música "{track.title}" será removida da sua biblioteca. Esta ação não exclui o arquivo do dispositivo.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => handleDeleteTrack(track, e)}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Excluir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </motion.div>
             );
           })}
@@ -235,7 +284,7 @@ export function CategoryDetail({
               {trackToAdd ? 'Adicionar à Playlist' : `Adicionar ${tracks.length} músicas`}
             </DialogTitle>
           </DialogHeader>
-          
+
           {showCreatePlaylist ? (
             <div className="space-y-4">
               <Input
@@ -283,8 +332,8 @@ export function CategoryDetail({
                   {playlists.map((playlist) => (
                     <button
                       key={playlist.id}
-                      onClick={() => trackToAdd 
-                        ? handleAddToPlaylist(playlist.id) 
+                      onClick={() => trackToAdd
+                        ? handleAddToPlaylist(playlist.id)
                         : handleAddAllToPlaylist(playlist.id)
                       }
                       className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors text-left"

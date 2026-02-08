@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Disc, Trash2, Plus, Music2, Sparkles, FolderPlus, ImagePlus } from 'lucide-react';
+import { Disc, Trash2, Plus, Music2, Sparkles, FolderPlus, ImagePlus, Pencil } from 'lucide-react';
 import { Album } from '@/hooks/useLibraryOrganization';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -32,13 +32,17 @@ interface AlbumListProps {
 }
 
 export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
-  const { deleteTracksByAlbum, addTracksFromFiles, createAlbum, customAlbums, deleteCustomAlbum, updateAlbumCover } = useMusicLibrary();
+  const { deleteTracksByAlbum, addTracksFromFiles, createAlbum, customAlbums, deleteCustomAlbum, updateAlbumCover, updateAlbumMetadata } = useMusicLibrary();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [newAlbumArtist, setNewAlbumArtist] = useState('');
   const [albumForCover, setAlbumForCover] = useState<Album | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [albumToEdit, setAlbumToEdit] = useState<Album | null>(null);
+  const [editAlbumName, setEditAlbumName] = useState('');
+  const [editAlbumArtist, setEditAlbumArtist] = useState('');
 
   const handleDeleteAlbum = (album: Album) => {
     deleteTracksByAlbum(album.name, album.artist);
@@ -87,7 +91,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
         toast.error('Selecione um arquivo de imagem válido');
         return;
       }
-      
+
       try {
         // Converte para Data URL persistente (sobrevive ao refresh)
         const coverDataUrl = await imageToDataUrl(file);
@@ -100,7 +104,31 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
     e.target.value = '';
     setAlbumForCover(null);
   };
-  
+
+  const handleEditClick = (album: Album, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setAlbumToEdit(album);
+    setEditAlbumName(album.name);
+    setEditAlbumArtist(album.artist);
+    setShowEditDialog(true);
+  };
+
+  const handleEditAlbum = () => {
+    if (albumToEdit && editAlbumName.trim()) {
+      updateAlbumMetadata(
+        albumToEdit.name,
+        albumToEdit.artist,
+        editAlbumName.trim(),
+        editAlbumArtist.trim() || 'Artista Desconhecido'
+      );
+      toast.success(`Álbum atualizado para "${editAlbumName}"`);
+      setShowEditDialog(false);
+      setAlbumToEdit(null);
+      setEditAlbumName('');
+      setEditAlbumArtist('');
+    }
+  };
+
   // Converte imagem para Data URL comprimida
   const imageToDataUrl = (file: File, maxWidth = 400): Promise<string> => {
     return new Promise((resolve, reject) => {
@@ -135,7 +163,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
         multiple
         className="hidden"
       />
-      
+
       {/* Input hidden para seleção de capa */}
       <input
         type="file"
@@ -176,7 +204,7 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
       </div>
 
       {albums.length === 0 ? (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="flex flex-col items-center justify-center py-16 text-center"
@@ -216,35 +244,35 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
                   {/* Capa do Álbum */}
                   <div className="relative aspect-square rounded-2xl overflow-hidden bg-secondary shadow-lg group-hover:shadow-xl group-hover:shadow-primary/10 transition-all duration-300">
                     {album.coverUrl ? (
-                      <img 
-                        src={album.coverUrl} 
-                        alt={album.name} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      <img
+                        src={album.coverUrl}
+                        alt={album.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-secondary via-muted to-secondary flex items-center justify-center">
                         <Disc size={40} className="text-muted-foreground/50" />
                       </div>
                     )}
-                    
+
                     {/* Overlay gradiente */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    
+
                     {/* Play indicator on hover */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       <div className="w-12 h-12 rounded-full bg-primary/90 flex items-center justify-center shadow-lg backdrop-blur-sm">
                         <svg className="w-5 h-5 text-primary-foreground ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
+                          <path d="M8 5v14l11-7z" />
                         </svg>
                       </div>
                     </div>
-                    
+
                     {/* Badge de músicas */}
                     <div className="absolute bottom-2 left-2 px-2 py-0.5 bg-black/60 backdrop-blur-sm rounded-full text-[10px] text-white/90 font-medium">
                       {album.trackCount} {album.trackCount === 1 ? 'música' : 'músicas'}
                     </div>
                   </div>
-                  
+
                   {/* Informações do Álbum */}
                   <div className="mt-2.5 px-1">
                     <p className="font-semibold text-foreground truncate text-sm leading-tight">
@@ -256,11 +284,22 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
                   </div>
                 </button>
 
-                {/* Botão Adicionar Capa - aparece no hover */}
+                {/* Botão Editar - aparece no hover */}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="absolute top-2 left-2 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-black/50 backdrop-blur-sm text-white/80 hover:text-primary hover:bg-black/70"
+                  onClick={(e) => handleEditClick(album, e)}
+                  title="Editar álbum"
+                >
+                  <Pencil size={14} />
+                </Button>
+
+                {/* Botão Adicionar Capa - aparece no hover */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 left-10 h-7 w-7 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-200 bg-black/50 backdrop-blur-sm text-white/80 hover:text-primary hover:bg-black/70"
                   onClick={(e) => handleCoverClick(album, e)}
                   title="Adicionar capa"
                 >
@@ -334,6 +373,43 @@ export function AlbumList({ albums, onAlbumSelect }: AlbumListProps) {
             <Button onClick={handleCreateAlbum} disabled={!newAlbumName.trim()}>
               <FolderPlus size={16} className="mr-2" />
               Criar Álbum
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para editar álbum */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Editar Álbum</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Nome do Álbum</label>
+              <Input
+                placeholder="Ex: Minhas Favoritas"
+                value={editAlbumName}
+                onChange={(e) => setEditAlbumName(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Artista</label>
+              <Input
+                placeholder="Ex: Vários Artistas"
+                value={editAlbumArtist}
+                onChange={(e) => setEditAlbumArtist(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditAlbum} disabled={!editAlbumName.trim()}>
+              <Pencil size={16} className="mr-2" />
+              Salvar Alterações
             </Button>
           </DialogFooter>
         </DialogContent>

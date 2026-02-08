@@ -2,12 +2,12 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { Track } from '@/types/music';
 import { scanMusicFiles, requestStoragePermissions } from '@/services/musicScanner';
 import { Capacitor } from '@capacitor/core';
-import { 
-  saveAudioFile, 
-  getAudioFile, 
+import {
+  saveAudioFile,
+  getAudioFile,
   deleteAudioFile,
   saveCoverImage,
-  getCoverImage 
+  getCoverImage
 } from '@/services/audioStorageService';
 
 export interface CustomAlbum {
@@ -26,6 +26,7 @@ interface TrackMetadata {
   album: string;
   duration: number;
   hasAudio: boolean; // Indica se há áudio no IndexedDB
+  mediaType?: 'audio' | 'video';
 }
 
 interface MusicLibraryContextType {
@@ -44,6 +45,7 @@ interface MusicLibraryContextType {
   createAlbum: (name: string, artist?: string) => CustomAlbum;
   deleteCustomAlbum: (albumId: string) => void;
   updateAlbumCover: (albumName: string, artistName: string, coverUrl: string) => void;
+  updateAlbumMetadata: (oldName: string, oldArtist: string, newName: string, newArtist: string) => void;
 }
 
 const MusicLibraryContext = createContext<MusicLibraryContextType | null>(null);
@@ -100,12 +102,12 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   // Carrega metadados de tracks salvos (sem o áudio)
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
-  
+
   const [customAlbums, setCustomAlbums] = useState<CustomAlbum[]>(() => {
     const saved = localStorage.getItem('customAlbums');
     return saved ? JSON.parse(saved) : [];
   });
-  
+
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStatus, setScanStatus] = useState('');
@@ -132,7 +134,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
             // Recupera a capa do álbum
             const albumKey = `${meta.album}__${meta.artist}`;
             const coverUrl = await getCoverImage(albumKey);
-            
+
             if (audioDataUrl) {
               loadedTracks.push({
                 id: meta.id,
@@ -142,6 +144,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
                 duration: meta.duration,
                 uri: audioDataUrl,
                 coverUrl: coverUrl || undefined,
+                mediaType: meta.mediaType || 'audio',
               });
             }
           }
@@ -162,7 +165,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
   // Salva metadados no localStorage (apenas info básica, sem o áudio)
   useEffect(() => {
     if (!isLoaded) return;
-    
+
     const metadata: TrackMetadata[] = tracks.map(t => ({
       id: t.id,
       title: t.title,
@@ -170,8 +173,9 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
       album: t.album,
       duration: t.duration,
       hasAudio: !!t.uri,
+      mediaType: t.mediaType,
     }));
-    
+
     localStorage.setItem('trackMetadata', JSON.stringify(metadata));
   }, [tracks, isLoaded]);
 
@@ -193,7 +197,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
 
     try {
       const hasPermission = await requestStoragePermissions();
-      
+
       if (!hasPermission) {
         setError('Permissão de armazenamento negada.');
         setIsScanning(false);
@@ -255,23 +259,25 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
     const targetArtist = albumArtist || 'Artista Desconhecido';
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith('audio/')) continue;
+      if (!file.type.startsWith('audio/') && !file.type.startsWith('video/')) continue;
 
       try {
         const { title } = parseFileName(file.name);
         const trackId = generateTrackId(file.name);
-        
+        const mediaType = file.type.startsWith('video/') ? 'video' : 'audio';
+
         // Converte para Data URL
         const dataUrl = await fileToDataUrl(file);
-        
+
         // Salva no IndexedDB (armazenamento grande)
         await saveAudioFile(trackId, dataUrl);
-        
+
         // Obtém duração
-        const tempAudio = new Audio(dataUrl);
+        const tempMedia = mediaType === 'video' ? document.createElement('video') : new Audio();
+        tempMedia.src = dataUrl;
         const duration = await new Promise<number>((resolve) => {
-          tempAudio.addEventListener('loadedmetadata', () => resolve(tempAudio.duration || 0));
-          tempAudio.addEventListener('error', () => resolve(0));
+          tempMedia.addEventListener('loadedmetadata', () => resolve(tempMedia.duration || 0));
+          tempMedia.addEventListener('error', () => resolve(0));
         });
 
         const track: Track = {
@@ -282,6 +288,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
           duration,
           uri: dataUrl,
           coverUrl: undefined,
+          mediaType,
         };
 
         setTracks(prevTracks => [...prevTracks, track]);
@@ -293,24 +300,44 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
 
   const updateAlbumCover = async (albumName: string, artistName: string, coverUrl: string) => {
     const albumKey = `${albumName}__${artistName}`;
-    
+
     // Salva a capa no IndexedDB
     await saveCoverImage(albumKey, coverUrl);
-    
+
     // Atualiza todas as tracks do álbum
-    setTracks(prevTracks => 
-      prevTracks.map(track => 
+    setTracks(prevTracks =>
+      prevTracks.map(track =>
         track.album === albumName && track.artist === artistName
           ? { ...track, coverUrl }
           : track
       )
     );
-    
+
     // Atualiza o álbum customizado se existir
-    setCustomAlbums(prev => 
-      prev.map(album => 
+    setCustomAlbums(prev =>
+      prev.map(album =>
         album.name === albumName && album.artist === artistName
           ? { ...album, coverUrl }
+          : album
+      )
+    );
+  };
+
+  const updateAlbumMetadata = (oldName: string, oldArtist: string, newName: string, newArtist: string) => {
+    // Atualiza todas as tracks do álbum
+    setTracks(prevTracks =>
+      prevTracks.map(track =>
+        track.album === oldName && track.artist === oldArtist
+          ? { ...track, album: newName, artist: newArtist }
+          : track
+      )
+    );
+
+    // Atualiza o álbum customizado, se existir
+    setCustomAlbums(prevAlbums =>
+      prevAlbums.map(album =>
+        album.name === oldName && album.artist === oldArtist
+          ? { ...album, name: newName, artist: newArtist }
           : album
       )
     );
@@ -355,6 +382,7 @@ export function MusicLibraryProvider({ children }: { children: ReactNode }) {
         createAlbum,
         deleteCustomAlbum,
         updateAlbumCover,
+        updateAlbumMetadata,
       }}
     >
       {children}

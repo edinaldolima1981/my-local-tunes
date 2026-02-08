@@ -21,6 +21,7 @@ export interface Track {
   duration: number;
   uri: string;
   coverUrl?: string;
+  mediaType: 'audio' | 'video';
 }
 
 /**

@@ -1,7 +1,9 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "vibeplayer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "VibePlayer - Your music, your style. A modern offline music and video player with premium features.",
+  "author": "Edinaldo Lima",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,34 +1,37 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.ba129bad79c94a08a096a53c0367afd1',
-  appName: 'Music Player',
+  appId: 'com.vibeplayer.app',
+  appName: 'VibePlayer',
   webDir: 'dist',
-  
-  // Configuração para desenvolvimento - remover em produção
-  // server: {
-  //   url: 'https://ba129bad-79c9-4a08-a096-a53c0367afd1.lovableproject.com?forceHideBadge=true',
-  //   cleartext: true
-  // },
 
   // App 100% offline - sem requisições de rede
   android: {
     // Desabilita tráfego de rede não criptografado
     allowMixedContent: false,
+    // Versão do build
+    versionCode: 1,
   },
-  
+
   ios: {
     // Configurações de privacidade iOS
     contentInset: 'automatic',
+    // Número da versão de compilação
+    buildNumber: '1',
   },
 
   plugins: {
-    // Configuração do Filesystem
+    // Configuração do Filesystem para acesso a arquivos de mídia
     Filesystem: {
-      // Diretórios permitidos para leitura
       iosCustomScheme: 'capacitor',
+    },
+    // Splash Screen nativo (opcional)
+    SplashScreen: {
+      launchShowDuration: 0, // Usamos nossa própria splash screen
+      backgroundColor: '#000000',
     },
   },
 };
 
 export default config;
+

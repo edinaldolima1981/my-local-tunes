@@ -4,6 +4,7 @@ import { Track, RepeatMode } from '@/types/music';
 import { AlbumArt } from './AlbumArt';
 import { ProgressBar } from './ProgressBar';
 import { PlayerControls } from './PlayerControls';
+import { VideoPlayer } from './VideoPlayer';
 import { Button } from '@/components/ui/button';
 
 interface FullscreenPlayerProps {
@@ -51,25 +52,23 @@ export function FullscreenPlayer({
           transition={{ duration: 0.3 }}
           className="fixed inset-0 z-50 bg-background"
         >
-          {/* Background with album art blur */}
-          {track?.coverUrl && (
-            <motion.div
-              initial={{ opacity: 0, scale: 1.1 }}
-              animate={{ opacity: 0.3, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.5 }}
-              className="absolute inset-0 overflow-hidden"
-            >
-              <img
+          {/* Background Layer */}
+          <div className="absolute inset-0 overflow-hidden">
+            {track?.coverUrl ? (
+              <motion.img
+                initial={{ opacity: 0, scale: 1.1 }}
+                animate={{ opacity: 0.3, scale: 1 }}
                 src={track.coverUrl}
                 alt=""
                 className="w-full h-full object-cover blur-3xl"
               />
-              <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
-            </motion.div>
-          )}
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary/10 via-background to-accent/10" />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/80 to-background" />
+          </div>
 
-          {/* Content */}
+          {/* Main Content */}
           <motion.div
             initial={{ y: 50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -78,121 +77,101 @@ export function FullscreenPlayer({
             className="relative h-full flex flex-col safe-area-inset"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-4">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onClose}
-                className="text-foreground/70 hover:text-foreground"
-              >
+            <div className="flex items-center justify-between px-4 py-4 shrink-0">
+              <Button variant="ghost" size="icon" onClick={onClose} className="text-foreground/70 hover:text-foreground">
                 <ChevronDown size={28} />
               </Button>
-              
               <div className="text-center">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider">
-                  Tocando agora
-                </p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">Tocando agora</p>
               </div>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={onShowQueue}
-                className="text-foreground/70 hover:text-foreground"
-              >
+              <Button variant="ghost" size="icon" onClick={onShowQueue} className="text-foreground/70 hover:text-foreground">
                 <ListMusic size={24} />
               </Button>
             </div>
 
-            {/* Album Art */}
-            <div className="flex-1 flex items-center justify-center px-8 py-4">
-              <motion.div
-                key={track?.id}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ 
-                  type: "spring", 
-                  stiffness: 300, 
-                  damping: 25,
-                  delay: 0.15 
-                }}
-                className="w-full max-w-sm aspect-square"
-              >
-                <div className={`w-full h-full rounded-2xl overflow-hidden shadow-2xl ${isPlaying ? 'animate-pulse-glow' : ''}`}>
-                  {track?.coverUrl ? (
-                    <img
-                      src={track.coverUrl}
-                      alt={track.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center">
-                      <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center">
-                        <div className="w-12 h-12 rounded-full bg-primary/40" />
-                      </div>
+            {/* Content Area - Split View */}
+            <div className="flex-1 flex flex-col min-h-0">
+              {/* Media Container (Vinyl or Video) */}
+              <div className={`flex-1 flex items-center justify-center p-4 transition-all duration-300 ${track?.mediaType === 'video' ? 'max-h-[60vh]' : ''
+                }`}>
+                <motion.div
+                  key={track?.id}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                  className={`relative flex items-center justify-center ${track?.mediaType === 'video'
+                    ? 'w-full h-full'
+                    : 'w-full max-w-sm aspect-square'
+                    }`}
+                >
+                  {track?.mediaType === 'video' ? (
+                    <div className="w-full h-full rounded-2xl overflow-hidden shadow-2xl bg-black relative group">
+                      <VideoPlayer
+                        src={track.uri}
+                        isPlaying={isPlaying}
+                        currentTime={currentTime}
+                        repeat={repeat}
+                      />
                     </div>
+                  ) : (
+                    <AlbumArt
+                      coverUrl={track?.coverUrl}
+                      isPlaying={isPlaying}
+                      size="xl"
+                    />
                   )}
-                </div>
-              </motion.div>
-            </div>
+                </motion.div>
+              </div>
 
-            {/* Track Info & Controls */}
-            <div className="px-8 pb-8 space-y-6">
-              {/* Track Info */}
-              <motion.div
-                key={`info-${track?.id}`}
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.2 }}
-                className="flex items-center justify-between"
-              >
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-2xl font-bold text-foreground truncate">
-                    {track?.title || 'Nenhuma música'}
-                  </h2>
-                  <p className="text-lg text-muted-foreground truncate">
-                    {track?.artist || 'Selecione uma música'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary">
+              {/* Controls Container */}
+              <div className="px-8 pb-8 pt-4 space-y-6 bg-gradient-to-t from-background via-background/90 to-transparent shrink-0">
+                {/* Track Info */}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-2xl font-bold text-foreground truncate">
+                      {track?.title || 'Nenhuma música'}
+                    </h2>
+                    <p className="text-lg text-muted-foreground truncate">
+                      {track?.artist || 'Selecione uma música'}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary ml-4">
                     <Heart size={24} />
                   </Button>
                 </div>
-              </motion.div>
 
-              {/* Progress Bar */}
-              <div className="space-y-2">
+                {/* Progress Bar */}
                 <ProgressBar
                   currentTime={currentTime}
                   duration={duration}
                   onSeek={onSeek}
                 />
-              </div>
 
-              {/* Controls */}
-              <div className="py-4">
-                <PlayerControls
-                  isPlaying={isPlaying}
-                  shuffle={shuffle}
-                  repeat={repeat}
-                  onTogglePlay={onTogglePlay}
-                  onPrevious={onPrevious}
-                  onNext={onNext}
-                  onToggleShuffle={onToggleShuffle}
-                  onToggleRepeat={onToggleRepeat}
-                  disabled={!track}
-                />
-              </div>
+                {/* Main Controls */}
+                <div className="py-2">
+                  <PlayerControls
+                    isPlaying={isPlaying}
+                    shuffle={shuffle}
+                    repeat={repeat}
+                    onTogglePlay={onTogglePlay}
+                    onPrevious={onPrevious}
+                    onNext={onNext}
+                    onToggleShuffle={onToggleShuffle}
+                    onToggleRepeat={onToggleRepeat}
+                    disabled={!track}
+                    size="large"
+                  />
+                </div>
 
-              {/* Extra Actions */}
-              <div className="flex items-center justify-center gap-8 pt-2">
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <Share2 size={20} />
-                </Button>
-                <Button variant="ghost" size="sm" className="text-muted-foreground">
-                  <MoreHorizontal size={20} />
-                </Button>
+                {/* Extra Actions */}
+                <div className="flex items-center justify-center gap-8">
+                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                    <Share2 size={20} />
+                  </Button>
+                  <Button variant="ghost" size="sm" className="text-muted-foreground">
+                    <MoreHorizontal size={20} />
+                  </Button>
+                </div>
               </div>
             </div>
           </motion.div>
