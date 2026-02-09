@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { MusicLibraryProvider } from "@/hooks/useMusicLibrary";
 import { PlaylistProvider } from "@/hooks/usePlaylists";
 import { FavoritesProvider } from "@/hooks/useFavorites";
@@ -33,13 +33,13 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => {
+// Componente principal do app com splash/onboarding
+const MainApp = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Check if user has seen onboarding before
     const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
     if (!hasSeenOnboarding) {
       setShowOnboarding(true);
@@ -48,8 +48,6 @@ const App = () => {
 
   const handleSplashComplete = () => {
     setShowSplash(false);
-
-    // If user needs onboarding, that's next, otherwise go to app
     if (!showOnboarding) {
       setIsReady(true);
     }
@@ -61,46 +59,46 @@ const App = () => {
   };
 
   return (
+    <LicenseProvider>
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+
+      {!showSplash && showOnboarding && (
+        <Onboarding onComplete={handleOnboardingComplete} />
+      )}
+
+      {isReady && (
+        <MusicLibraryProvider>
+          <PlaylistProvider>
+            <FavoritesProvider>
+              <LicenseGate>
+                <Index />
+              </LicenseGate>
+            </FavoritesProvider>
+          </PlaylistProvider>
+        </MusicLibraryProvider>
+      )}
+    </LicenseProvider>
+  );
+};
+
+const App = () => {
+  return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <LicenseProvider>
-          {/* Show Splash Screen First */}
-          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-
-          {/* Show Onboarding After Splash (if needed) */}
-          {!showSplash && showOnboarding && (
-            <Onboarding onComplete={handleOnboardingComplete} />
-          )}
-
-          {/* Main App (after splash and onboarding) */}
-          {isReady && (
-            <MusicLibraryProvider>
-              <PlaylistProvider>
-                <FavoritesProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <Routes>
-                      {/* Admin route - não precisa de verificação de licença */}
-                      <Route path="/admin" element={<Admin />} />
-                      <Route path="/privacy" element={<Privacy />} />
-                      
-                      {/* Rotas protegidas por licença */}
-                      <Route path="/" element={
-                        <LicenseGate>
-                          <Index />
-                        </LicenseGate>
-                      } />
-                      
-                      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </BrowserRouter>
-                </FavoritesProvider>
-              </PlaylistProvider>
-            </MusicLibraryProvider>
-          )}
-        </LicenseProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            {/* Admin route - acesso direto, sem splash/onboarding/licença */}
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/privacy" element={<Privacy />} />
+            
+            {/* Rota principal com splash, onboarding e verificação de licença */}
+            <Route path="/" element={<MainApp />} />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   );
