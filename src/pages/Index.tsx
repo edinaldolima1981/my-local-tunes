@@ -1,28 +1,20 @@
 /**
  * @fileoverview Página principal do Music Player
  * 
- * Esta é a tela principal do aplicativo, contendo:
- * - Header com logo e controles
- * - Navegação por abas (Músicas, Artistas, Álbuns, Pastas, Playlists)
- * - Barra de busca
- * - Mini Player (quando há música tocando)
- * - Player em tela cheia (modal)
+ * Contém navegação entre Home e Library com:
+ * - Home: Carrossel de artistas + grid de álbuns
+ * - Library: Lista de músicas, artistas, álbuns, playlists
+ * - Mini Player e Player em tela cheia
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Disc3, 
   Volume2, 
   RefreshCw, 
-  User, 
-  Disc, 
-  FolderOpen, 
-  ListMusic,
-  Music,
-  Search,
   Shield,
-  Heart
+  Home,
+  Library
 } from 'lucide-react';
 
 // Hooks
@@ -32,418 +24,117 @@ import { useLibraryOrganization, Artist, Album } from '@/hooks/useLibraryOrganiz
 import { usePlaylists } from '@/hooks/usePlaylists';
 
 // Componentes do Player
-import { TrackList } from '@/components/player/TrackList';
-import { SearchBar } from '@/components/player/SearchBar';
 import { VolumeControl } from '@/components/player/VolumeControl';
 import { MiniPlayer } from '@/components/player/MiniPlayer';
 import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 
-// Componentes da Biblioteca
-import { ArtistList } from '@/components/library/ArtistList';
-import { AlbumList } from '@/components/library/AlbumList';
-import { PlaylistView } from '@/components/library/PlaylistView';
-import { PlaylistDetail } from '@/components/library/PlaylistDetail';
-import { CategoryDetail } from '@/components/library/CategoryDetail';
-import { FavoritesList } from '@/components/library/FavoritesList';
-
-// UI Components
+// Componentes
+import { HomeScreen } from '@/components/home/HomeScreen';
+import { LibraryScreen } from '@/components/library/LibraryScreen';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Equalizer } from '@/components/player/Equalizer';
 
 // Types
-import { Playlist, Track } from '@/types/music';
+import { Track } from '@/types/music';
 
-/** Visualizações disponíveis da biblioteca */
-type LibraryView = 'main' | 'artist' | 'album' | 'playlist' | 'search';
+type MainTab = 'home' | 'library';
 
-/** Abas de navegação da biblioteca */
-type LibraryTab = 'songs' | 'favorites' | 'artists' | 'albums' | 'playlists';
-
-/**
- * Componente principal da aplicação
- * Gerencia o estado da UI e coordena os sub-componentes
- */
 const Index = () => {
-  // ============================================
-  // Estado da UI
-  // ============================================
-  const [searchQuery, setSearchQuery] = useState('');
+  // UI State
+  const [mainTab, setMainTab] = useState<MainTab>('home');
   const [showVolume, setShowVolume] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [libraryView, setLibraryView] = useState<LibraryView>('main');
-  const [libraryTab, setLibraryTab] = useState<LibraryTab>('songs');
-  const [highlightedTrackId, setHighlightedTrackId] = useState<string | null>(null);
   
-  // Estado de seleção para navegação detalhada
-  const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
-  const [selectedPlaylist, setSelectedPlaylist] = useState<Playlist | null>(null);
+  // Navigation state (for going from Home to Library detail)
+  const [pendingArtist, setPendingArtist] = useState<Artist | null>(null);
+  const [pendingAlbum, setPendingAlbum] = useState<Album | null>(null);
 
-  // ============================================
   // Hooks
-  // ============================================
-  
-  /** Hook do player de áudio - controla reprodução, fila, etc */
   const player = useAudioPlayer();
-  
-  /** Hook da biblioteca - escaneia e gerencia arquivos de música */
   const { tracks, customAlbums, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
-  
-  /** Hook de organização - agrupa por artista, álbum */
   const { artists, albums, searchTracks } = useLibraryOrganization(tracks, customAlbums);
-  
-  /** Hook de playlists */
   const { resolvePlaylists } = usePlaylists();
 
-  // ============================================
-  // Efeitos
-  // ============================================
-
-  /**
-   * Resolve as tracks das playlists quando a biblioteca carrega
-   */
+  // Resolve playlists when library loads
   useEffect(() => {
     if (tracks.length > 0) {
       resolvePlaylists(tracks);
     }
   }, [tracks, resolvePlaylists]);
 
-  /**
-   * Carrega a fila de reprodução quando as músicas são escaneadas
-   * Isso permite que o usuário comece a tocar imediatamente
-   */
+  // Load queue when tracks are scanned
   useEffect(() => {
     if (tracks.length > 0 && player.queue.length === 0) {
       player.loadQueue(tracks, 0);
     }
   }, [tracks]);
 
-  // ============================================
-  // Dados Derivados
-  // ============================================
-
-  /** Filtra músicas baseado na busca do usuário */
-  const filteredTracks = useMemo(() => {
-    return searchTracks(searchQuery);
-  }, [searchQuery, searchTracks]);
-
-  // ============================================
   // Handlers
-  // ============================================
-
-  /**
-   * Seleciona uma música da lista filtrada
-   * Encontra o índice original para manter a fila correta
-   */
   const handleTrackSelect = (index: number) => {
-    const track = filteredTracks[index];
-    const originalIndex = tracks.findIndex(t => t.id === track.id);
-    player.loadQueue(tracks, originalIndex);
+    player.loadQueue(tracks, index);
   };
 
-  /**
-   * Reproduz a partir de uma categoria (artista, álbum, etc)
-   * Carrega apenas as músicas daquela categoria
-   */
   const handlePlayFromCategory = (categoryTracks: Track[], index: number) => {
     player.loadQueue(categoryTracks, index);
   };
 
-  /** Reproduz todas as músicas de uma categoria */
   const handlePlayAll = (tracksToPlay: Track[]) => {
     if (tracksToPlay.length > 0) {
       player.loadQueue(tracksToPlay, 0);
     }
   };
 
-  /** Navega para os detalhes de um artista */
   const handleArtistSelect = (artist: Artist) => {
-    setSelectedArtist(artist);
-    setLibraryView('artist');
+    setPendingArtist(artist);
+    setMainTab('library');
   };
 
-  /** Navega para os detalhes de um álbum */
   const handleAlbumSelect = (album: Album) => {
-    setSelectedAlbum(album);
-    setLibraryView('album');
+    setPendingAlbum(album);
+    setMainTab('library');
   };
 
-  /** Navega para os detalhes de uma playlist */
-  const handlePlaylistSelect = (playlist: Playlist) => {
-    setSelectedPlaylist(playlist);
-    setLibraryView('playlist');
+  const handleClearPending = () => {
+    setPendingArtist(null);
+    setPendingAlbum(null);
   };
 
-  /** Volta para a visualização principal da biblioteca */
-  const handleBackToMain = () => {
-    setLibraryView('main');
-    setSelectedArtist(null);
-    setSelectedAlbum(null);
-    setSelectedPlaylist(null);
-  };
-
-  /** Navega para a aba de músicas com destaque na faixa selecionada */
-  const handleGoToSongsWithHighlight = (track: Track) => {
-    setHighlightedTrackId(track.id);
-    setLibraryView('main');
-    setLibraryTab('songs');
-    setSearchQuery('');
-    setSelectedArtist(null);
-    setSelectedAlbum(null);
-    setSelectedPlaylist(null);
-    
-    // Remove o destaque após alguns segundos
-    setTimeout(() => {
-      setHighlightedTrackId(null);
-    }, 3000);
-  };
-
-  /** Calcula o progresso da música atual (0 a 1) */
   const progress = player.duration > 0 ? player.currentTime / player.duration : 0;
-
-  const renderLibraryContent = () => {
-    // Detail views
-    if (libraryView === 'artist' && selectedArtist) {
-      return (
-        <CategoryDetail
-          title={selectedArtist.name}
-          tracks={selectedArtist.tracks}
-          currentTrack={player.currentTrack}
-          isPlaying={player.isPlaying}
-          onBack={handleBackToMain}
-          onPlayAll={handlePlayAll}
-          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
-          onTrackDoubleClick={handleGoToSongsWithHighlight}
-          onOpenFullscreen={() => setShowFullscreen(true)}
-        />
-      );
-    }
-
-    if (libraryView === 'album' && selectedAlbum) {
-      return (
-        <CategoryDetail
-          title={selectedAlbum.name}
-          subtitle={selectedAlbum.artist}
-          tracks={selectedAlbum.tracks}
-          currentTrack={player.currentTrack}
-          isPlaying={player.isPlaying}
-          onBack={handleBackToMain}
-          onPlayAll={handlePlayAll}
-          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
-          onTrackDoubleClick={handleGoToSongsWithHighlight}
-          onOpenFullscreen={() => setShowFullscreen(true)}
-          isAlbumView={true}
-          albumName={selectedAlbum.name}
-          albumArtist={selectedAlbum.artist}
-        />
-      );
-    }
-
-    if (libraryView === 'playlist' && selectedPlaylist) {
-      return (
-        <PlaylistDetail
-          playlist={selectedPlaylist}
-          currentTrack={player.currentTrack}
-          isPlaying={player.isPlaying}
-          onBack={handleBackToMain}
-          onPlayAll={handlePlayAll}
-          onTrackSelect={(track, index, tracks) => handlePlayFromCategory(tracks, index)}
-          onTrackDoubleClick={handleGoToSongsWithHighlight}
-          onOpenFullscreen={() => setShowFullscreen(true)}
-        />
-      );
-    }
-
-    // Main library view with swipeable tabs
-    const tabs: LibraryTab[] = ['songs', 'favorites', 'artists', 'albums', 'playlists'];
-    const tabIndex = tabs.indexOf(libraryTab);
-    
-    const handleSwipe = (direction: number) => {
-      const newIndex = tabIndex + direction;
-      if (newIndex >= 0 && newIndex < tabs.length) {
-        setLibraryTab(tabs[newIndex]);
-      }
-    };
-
-    const tabLabels: Record<LibraryTab, string> = {
-      songs: 'Músicas',
-      favorites: 'Favoritos',
-      artists: 'Artistas',
-      albums: 'Álbuns',
-      playlists: 'Playlists'
-    };
-
-    const tabIcons: Record<LibraryTab, React.ReactNode> = {
-      songs: <Music size={14} />,
-      favorites: <Heart size={14} />,
-      artists: <User size={14} />,
-      albums: <Disc size={14} />,
-      playlists: <ListMusic size={14} />
-    };
-
-    return (
-      <div className="space-y-4">
-        <SearchBar value={searchQuery} onChange={setSearchQuery} />
-
-        {searchQuery ? (
-          // Search results
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground px-1">
-              <Search size={16} />
-              <span>{filteredTracks.length} resultados para "{searchQuery}"</span>
-            </div>
-            <TrackList
-              tracks={filteredTracks}
-              currentTrack={player.currentTrack}
-              isPlaying={player.isPlaying}
-              onTrackSelect={handleTrackSelect}
-            />
-          </div>
-        ) : (
-          // Swipeable tabs
-          <>
-            {/* Tab labels */}
-            <div className="flex items-center justify-between px-1">
-              {tabs.map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setLibraryTab(tab)}
-                  className={`flex flex-col items-center gap-0.5 py-1 text-[10px] transition-all ${
-                    libraryTab === tab 
-                      ? 'text-primary font-medium' 
-                      : 'text-muted-foreground/60'
-                  }`}
-                >
-                  {tabIcons[tab]}
-                  <span>{tabLabels[tab]}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-              <span>
-                {libraryTab === 'songs' && `${tracks.length} músicas`}
-                {libraryTab === 'favorites' && 'Suas músicas favoritas'}
-                {libraryTab === 'artists' && `${artists.length} artistas`}
-                {libraryTab === 'albums' && `${albums.length} álbuns`}
-                {libraryTab === 'playlists' && 'Suas playlists'}
-              </span>
-              {libraryTab === 'songs' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={rescan}
-                  disabled={isScanning}
-                  className="text-primary hover:text-primary/80"
-                >
-                  <RefreshCw size={16} className={`mr-2 ${isScanning ? 'animate-spin' : ''}`} />
-                  Atualizar
-                </Button>
-              )}
-            </div>
-
-            {/* Swipeable content area */}
-            <motion.div
-              key={libraryTab}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.2 }}
-              drag="x"
-              dragConstraints={{ left: 0, right: 0 }}
-              dragElastic={0.2}
-              onDragEnd={(_, info) => {
-                if (info.offset.x > 80) handleSwipe(-1);
-                else if (info.offset.x < -80) handleSwipe(1);
-              }}
-              className="touch-pan-y"
-            >
-              {libraryTab === 'songs' && (
-                <TrackList
-                  tracks={tracks}
-                  currentTrack={player.currentTrack}
-                  isPlaying={player.isPlaying}
-                  onTrackSelect={handleTrackSelect}
-                  highlightedTrackId={highlightedTrackId}
-                />
-              )}
-              {libraryTab === 'favorites' && (
-                <FavoritesList
-                  allTracks={tracks}
-                  currentTrack={player.currentTrack}
-                  isPlaying={player.isPlaying}
-                  onTrackSelect={handleTrackSelect}
-                  highlightedTrackId={highlightedTrackId}
-                />
-              )}
-              {libraryTab === 'artists' && (
-                <ArtistList artists={artists} onArtistSelect={handleArtistSelect} />
-              )}
-              {libraryTab === 'albums' && (
-                <AlbumList albums={albums} onAlbumSelect={handleAlbumSelect} />
-              )}
-              {libraryTab === 'playlists' && (
-                <PlaylistView onPlaylistSelect={handlePlaylistSelect} />
-              )}
-            </motion.div>
-          </>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-surface opacity-50 pointer-events-none" />
       
-      <div className="relative z-10 pb-24">
+      <div className="relative z-10 pb-32">
         <div className="container max-w-lg mx-auto px-4 py-6 safe-area-inset">
-          {/* Header */}
-          <motion.header 
+          {/* Header Controls */}
+          <motion.div 
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-between mb-6"
+            className="flex items-center justify-end gap-1 mb-4"
           >
-            <div className="flex items-center gap-3">
-              <motion.div
-                animate={{ rotate: player.isPlaying ? 360 : 0 }}
-                transition={{ duration: 3, repeat: player.isPlaying ? Infinity : 0, ease: "linear" }}
-              >
-                <Disc3 className="text-primary" size={32} />
-              </motion.div>
-              <div>
-                <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Shield size={10} />
-                  100% Offline • {tracks.length} músicas
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-1">
-              <Equalizer />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowPrivacy(true)}
-                className="text-muted-foreground hover:text-foreground"
-              >
-                <Shield size={20} />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowVolume(!showVolume)}
-                className={`transition-colors ${showVolume ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-              >
-                <Volume2 size={22} />
-              </Button>
-            </div>
-          </motion.header>
+            <Equalizer />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowPrivacy(true)}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Shield size={20} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowVolume(!showVolume)}
+              className={`transition-colors ${showVolume ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Volume2 size={22} />
+            </Button>
+          </motion.div>
 
           {/* Volume Control */}
           <AnimatePresence>
@@ -494,30 +185,100 @@ const Index = () => {
             )}
           </AnimatePresence>
 
-          {/* Library Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-          >
-            {renderLibraryContent()}
-          </motion.div>
+          {/* Main Content */}
+          <AnimatePresence mode="wait">
+            {mainTab === 'home' ? (
+              <motion.div
+                key="home"
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.2 }}
+              >
+                <HomeScreen
+                  artists={artists}
+                  albums={albums}
+                  tracksCount={tracks.length}
+                  isPlaying={player.isPlaying}
+                  onArtistSelect={handleArtistSelect}
+                  onAlbumSelect={handleAlbumSelect}
+                />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="library"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 50 }}
+                transition={{ duration: 0.2 }}
+              >
+                <LibraryScreen
+                  tracks={tracks}
+                  artists={artists}
+                  albums={albums}
+                  currentTrack={player.currentTrack}
+                  isPlaying={player.isPlaying}
+                  isScanning={isScanning}
+                  onRescan={rescan}
+                  onTrackSelect={handleTrackSelect}
+                  onPlayFromCategory={handlePlayFromCategory}
+                  onPlayAll={handlePlayAll}
+                  onOpenFullscreen={() => setShowFullscreen(true)}
+                  searchTracks={searchTracks}
+                  initialArtist={pendingArtist}
+                  initialAlbum={pendingAlbum}
+                  onClearInitial={handleClearPending}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* Mini Player */}
-      <AnimatePresence>
-        {player.currentTrack && !showFullscreen && (
-          <MiniPlayer
-            track={player.currentTrack}
-            isPlaying={player.isPlaying}
-            progress={progress}
-            onTogglePlay={player.togglePlay}
-            onNext={player.handleNext}
-            onExpand={() => setShowFullscreen(true)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        {/* Mini Player */}
+        <AnimatePresence>
+          {player.currentTrack && !showFullscreen && (
+            <MiniPlayer
+              track={player.currentTrack}
+              isPlaying={player.isPlaying}
+              progress={progress}
+              onTogglePlay={player.togglePlay}
+              onNext={player.handleNext}
+              onExpand={() => setShowFullscreen(true)}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Tab Bar */}
+        <div className="bg-background/95 backdrop-blur-lg border-t border-border/50 safe-area-inset-bottom">
+          <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
+            <button
+              onClick={() => setMainTab('home')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all ${
+                mainTab === 'home'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Home size={22} />
+              <span className="text-[10px] font-medium">Home</span>
+            </button>
+            <button
+              onClick={() => setMainTab('library')}
+              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all ${
+                mainTab === 'library'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Library size={22} />
+              <span className="text-[10px] font-medium">Biblioteca</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Fullscreen Player */}
       <FullscreenPlayer
