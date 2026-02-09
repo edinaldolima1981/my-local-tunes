@@ -120,6 +120,7 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState(() => {
     return localStorage.getItem('hasSeenOnboarding') !== 'true';
   });
+  const [appReady, setAppReady] = useState(false);
 
   const handleSplashComplete = () => {
     setShowSplash(false);
@@ -130,6 +131,18 @@ const AppContent = () => {
     setShowOnboarding(false);
   };
 
+  // Quando splash e onboarding terminam, marca como pronto com um pequeno delay
+  // para garantir que o DOM renderize corretamente (fix Chrome tela preta)
+  useEffect(() => {
+    if (!showSplash && !showOnboarding) {
+      // Força um reflow antes de renderizar o app principal
+      const timer = requestAnimationFrame(() => {
+        setAppReady(true);
+      });
+      return () => cancelAnimationFrame(timer);
+    }
+  }, [showSplash, showOnboarding]);
+
   // Splash screen
   if (showSplash) {
     return <SplashScreen onComplete={handleSplashComplete} />;
@@ -138,6 +151,11 @@ const AppContent = () => {
   // Onboarding
   if (showOnboarding) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
+
+  // Aguarda o app estar pronto (evita flash de tela preta no Chrome)
+  if (!appReady) {
+    return <LoadingScreen />;
   }
 
   // App principal com autenticação
