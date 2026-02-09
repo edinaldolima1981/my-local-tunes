@@ -3,13 +3,15 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MusicLibraryProvider } from "@/hooks/useMusicLibrary";
 import { PlaylistProvider } from "@/hooks/usePlaylists";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 import { LicenseProvider, useLicense } from "@/hooks/useLicense";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SplashScreen } from "@/components/welcome/SplashScreen";
 import { Onboarding } from "@/components/welcome/Onboarding";
+import { AuthScreen } from "@/components/auth/AuthScreen";
 import { PaymentScreen } from "@/components/license/PaymentScreen";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
@@ -22,12 +24,25 @@ const queryClient = new QueryClient();
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   const { status, isLoading } = useLicense();
 
-  // Enquanto carrega, mostra nada (splash ainda está ativa)
+  // Enquanto carrega, mostra nada
   if (isLoading) return null;
 
   // Se licença inválida (trial expirado e não pago), mostra tela de pagamento
   if (status && !status.isValid) {
     return <PaymentScreen />;
+  }
+
+  return <>{children}</>;
+};
+
+// Gate de autenticação - exige login antes de acessar o app
+const AuthGate = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return null;
+
+  if (!user) {
+    return <AuthScreen />;
   }
 
   return <>{children}</>;
@@ -59,25 +74,29 @@ const MainApp = () => {
   };
 
   return (
-    <LicenseProvider>
-      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+    <AuthProvider>
+      <LicenseProvider>
+        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
 
-      {!showSplash && showOnboarding && (
-        <Onboarding onComplete={handleOnboardingComplete} />
-      )}
+        {!showSplash && showOnboarding && (
+          <Onboarding onComplete={handleOnboardingComplete} />
+        )}
 
-      {isReady && (
-        <MusicLibraryProvider>
-          <PlaylistProvider>
-            <FavoritesProvider>
-              <LicenseGate>
-                <Index />
-              </LicenseGate>
-            </FavoritesProvider>
-          </PlaylistProvider>
-        </MusicLibraryProvider>
-      )}
-    </LicenseProvider>
+        {isReady && (
+          <AuthGate>
+            <MusicLibraryProvider>
+              <PlaylistProvider>
+                <FavoritesProvider>
+                  <LicenseGate>
+                    <Index />
+                  </LicenseGate>
+                </FavoritesProvider>
+              </PlaylistProvider>
+            </MusicLibraryProvider>
+          </AuthGate>
+        )}
+      </LicenseProvider>
+    </AuthProvider>
   );
 };
 
@@ -93,7 +112,7 @@ const App = () => {
             <Route path="/admin" element={<Admin />} />
             <Route path="/privacy" element={<Privacy />} />
             
-            {/* Rota principal com splash, onboarding e verificação de licença */}
+            {/* Rota principal com splash, onboarding, auth e verificação de licença */}
             <Route path="/" element={<MainApp />} />
             
             <Route path="*" element={<NotFound />} />
@@ -105,4 +124,3 @@ const App = () => {
 };
 
 export default App;
-
