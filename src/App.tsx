@@ -30,48 +30,8 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Componente que verifica licença - admins são isentos, não bloqueia durante loading
+// LicenseGate desativado temporariamente para garantir acesso
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
-  const { status, isLoading } = useLicense();
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!user) {
-      setIsAdmin(false);
-      return;
-    }
-
-    let alive = true;
-    // Timeout curto de 2s - se não responder, assume não-admin e segue
-    const timeout = setTimeout(() => {
-      if (alive) setIsAdmin(false);
-    }, 2000);
-
-    supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' })
-      .then(({ data, error }) => {
-        if (alive) setIsAdmin(error ? false : data === true);
-      })
-      .then(() => clearTimeout(timeout));
-
-    return () => { alive = false; clearTimeout(timeout); };
-  }, [user]);
-
-  // Enquanto carrega, mostra o app normalmente (não bloqueia)
-  if (isLoading || !status || isAdmin === null) {
-    return <>{children}</>;
-  }
-
-  // Admins têm acesso total
-  if (isAdmin) {
-    return <>{children}</>;
-  }
-
-  // Só bloqueia quando confirmado que licença é inválida
-  if (!status.isValid) {
-    return <PaymentScreen />;
-  }
-
   return <>{children}</>;
 };
 
