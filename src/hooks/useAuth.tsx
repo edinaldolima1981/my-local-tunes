@@ -5,7 +5,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
-import { getDeviceId } from '@/services/licenseService';
+
 
 interface AuthContextType {
   user: User | null;
@@ -29,42 +29,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Atualiza licença com user_id quando faz login
-  const linkLicenseToUser = useCallback(async (userId: string, email: string | undefined) => {
-    const deviceId = getDeviceId();
-    try {
-      // Primeiro, tenta atualizar licença existente vinculando o user_id
-      const { data: existingLicense } = await supabase
-        .from('user_licenses')
-        .select('id, user_id')
-        .eq('device_id', deviceId)
-        .maybeSingle();
-
-      if (existingLicense) {
-        // Atualiza a licença existente com o user_id e reinicia o trial
-        await supabase
-          .from('user_licenses')
-          .update({ 
-            user_id: userId,
-            email: email || null,
-            trial_started_at: new Date().toISOString(),
-            trial_ends_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-          })
-          .eq('id', existingLicense.id);
-      } else {
-        // Cria nova licença vinculada ao usuário
-        await supabase
-          .from('user_licenses')
-          .insert({ 
-            device_id: deviceId,
-            user_id: userId,
-            email: email || null
-          });
-      }
-    } catch (error) {
-      console.error('Erro ao vincular licença ao usuário:', error);
-    }
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -89,14 +53,6 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
 
-          // Quando usuário faz login, vincula à licença e inicia trial
-      if (event === 'SIGNED_IN' && currentSession?.user) {
-            // Defer Supabase calls to prevent deadlock
-            setTimeout(() => {
-              linkLicenseToUser(currentSession.user.id, currentSession.user.email)
-                .catch(err => console.error('Erro ao vincular licença:', err));
-            }, 0);
-          }
 
           if (!isMounted) return;
           window.clearTimeout(loadingTimeout);
@@ -131,7 +87,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       window.clearTimeout(loadingTimeout);
       subscription?.unsubscribe();
     };
-  }, [linkLicenseToUser]);
+  }, []);
 
   const signInWithGoogle = useCallback(async () => {
     const { lovable } = await import('@/integrations/lovable/index');
