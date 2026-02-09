@@ -257,7 +257,33 @@ const Index = () => {
       );
     }
 
-    // Main library view with tabs
+    // Main library view with swipeable tabs
+    const tabs: LibraryTab[] = ['songs', 'favorites', 'artists', 'albums', 'playlists'];
+    const tabIndex = tabs.indexOf(libraryTab);
+    
+    const handleSwipe = (direction: number) => {
+      const newIndex = tabIndex + direction;
+      if (newIndex >= 0 && newIndex < tabs.length) {
+        setLibraryTab(tabs[newIndex]);
+      }
+    };
+
+    const tabLabels: Record<LibraryTab, string> = {
+      songs: 'Músicas',
+      favorites: 'Favoritos',
+      artists: 'Artistas',
+      albums: 'Álbuns',
+      playlists: 'Playlists'
+    };
+
+    const tabIcons: Record<LibraryTab, React.ReactNode> = {
+      songs: <Music size={14} />,
+      favorites: <Heart size={14} />,
+      artists: <User size={14} />,
+      albums: <Disc size={14} />,
+      playlists: <ListMusic size={14} />
+    };
+
     return (
       <div className="space-y-4">
         <SearchBar value={searchQuery} onChange={setSearchQuery} />
@@ -277,30 +303,23 @@ const Index = () => {
             />
           </div>
         ) : (
-          // Category tabs
+          // Swipeable tabs
           <>
-            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide -mx-1 px-1">
-              {[
-                { id: 'songs', label: 'Músicas', icon: Music },
-                { id: 'favorites', label: 'Favoritos', icon: Heart },
-                { id: 'artists', label: 'Artistas', icon: User },
-                { id: 'albums', label: 'Álbuns', icon: Disc },
-                { id: 'playlists', label: 'Playlists', icon: ListMusic },
-              ].map(({ id, label, icon: Icon }) => (
-                <Button
-                  key={id}
-                  variant={libraryTab === id ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => setLibraryTab(id as LibraryTab)}
-                  className={`flex-shrink-0 rounded-full px-4 transition-all duration-200 ${
-                    libraryTab === id 
-                      ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+            {/* Tab indicator dots */}
+            <div className="flex items-center justify-center gap-3 py-2">
+              {tabs.map((tab, i) => (
+                <button
+                  key={tab}
+                  onClick={() => setLibraryTab(tab)}
+                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all ${
+                    libraryTab === tab 
+                      ? 'text-primary font-medium' 
+                      : 'text-muted-foreground/60'
                   }`}
                 >
-                  <Icon size={16} className="mr-1.5" />
-                  {label}
-                </Button>
+                  {tabIcons[tab]}
+                  {libraryTab === tab && <span>{tabLabels[tab]}</span>}
+                </button>
               ))}
             </div>
 
@@ -326,43 +345,50 @@ const Index = () => {
               )}
             </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={libraryTab}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                {libraryTab === 'songs' && (
-                  <TrackList
-                    tracks={tracks}
-                    currentTrack={player.currentTrack}
-                    isPlaying={player.isPlaying}
-                    onTrackSelect={handleTrackSelect}
-                    highlightedTrackId={highlightedTrackId}
-                  />
-                )}
-                {libraryTab === 'favorites' && (
-                  <FavoritesList
-                    allTracks={tracks}
-                    currentTrack={player.currentTrack}
-                    isPlaying={player.isPlaying}
-                    onTrackSelect={handleTrackSelect}
-                    highlightedTrackId={highlightedTrackId}
-                  />
-                )}
-                {libraryTab === 'artists' && (
-                  <ArtistList artists={artists} onArtistSelect={handleArtistSelect} />
-                )}
-                {libraryTab === 'albums' && (
-                  <AlbumList albums={albums} onAlbumSelect={handleAlbumSelect} />
-                )}
-                {libraryTab === 'playlists' && (
-                  <PlaylistView onPlaylistSelect={handlePlaylistSelect} />
-                )}
-              </motion.div>
-            </AnimatePresence>
+            {/* Swipeable content area */}
+            <motion.div
+              key={libraryTab}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.2 }}
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                if (info.offset.x > 80) handleSwipe(-1);
+                else if (info.offset.x < -80) handleSwipe(1);
+              }}
+              className="touch-pan-y"
+            >
+              {libraryTab === 'songs' && (
+                <TrackList
+                  tracks={tracks}
+                  currentTrack={player.currentTrack}
+                  isPlaying={player.isPlaying}
+                  onTrackSelect={handleTrackSelect}
+                  highlightedTrackId={highlightedTrackId}
+                />
+              )}
+              {libraryTab === 'favorites' && (
+                <FavoritesList
+                  allTracks={tracks}
+                  currentTrack={player.currentTrack}
+                  isPlaying={player.isPlaying}
+                  onTrackSelect={handleTrackSelect}
+                  highlightedTrackId={highlightedTrackId}
+                />
+              )}
+              {libraryTab === 'artists' && (
+                <ArtistList artists={artists} onArtistSelect={handleArtistSelect} />
+              )}
+              {libraryTab === 'albums' && (
+                <AlbumList albums={albums} onAlbumSelect={handleAlbumSelect} />
+              )}
+              {libraryTab === 'playlists' && (
+                <PlaylistView onPlaylistSelect={handlePlaylistSelect} />
+              )}
+            </motion.div>
           </>
         )}
       </div>
