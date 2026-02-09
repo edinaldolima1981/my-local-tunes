@@ -110,7 +110,23 @@ export function HomeScreen({
         transition={{ duration: 0.5, type: 'spring' }}
         className="relative mb-8"
       >
-        {/* Outer glow */}
+        {/* Neon pulse glow - only when playing */}
+        {isPlaying && (
+          <motion.div
+            animate={{ 
+              opacity: [0.3, 0.6, 0.3],
+              scale: [1, 1.05, 1],
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="absolute inset-0 rounded-3xl bg-primary blur-2xl"
+          />
+        )}
+        
+        {/* Static outer glow */}
         <div 
           className="absolute inset-0 rounded-3xl blur-2xl opacity-30"
           style={{ 
@@ -120,15 +136,8 @@ export function HomeScreen({
         
         {/* Neumorphic container */}
         <div className="relative p-4 rounded-3xl neu-card">
-          <motion.div
-            animate={{ rotate: isPlaying ? 360 : 0 }}
-            transition={{ 
-              duration: 20, 
-              repeat: isPlaying ? Infinity : 0, 
-              ease: "linear" 
-            }}
-            className="relative"
-          >
+          {/* Fixed album art - no rotation */}
+          <div className="relative">
             <img
               src={coverUrl}
               alt={currentTrack?.title || 'Album Cover'}
@@ -137,7 +146,7 @@ export function HomeScreen({
             
             {/* Vinyl effect overlay */}
             <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-          </motion.div>
+          </div>
         </div>
       </motion.div>
 
