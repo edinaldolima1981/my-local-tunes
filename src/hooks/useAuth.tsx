@@ -90,12 +90,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(currentSession?.user ?? null);
 
           // Quando usuário faz login, vincula à licença e inicia trial
-          if (event === 'SIGNED_IN' && currentSession?.user) {
-            try {
-              await linkLicenseToUser(currentSession.user.id, currentSession.user.email);
-            } catch (error) {
-              console.error('Erro ao vincular licença ao usuário:', error);
-            }
+      if (event === 'SIGNED_IN' && currentSession?.user) {
+            // Defer Supabase calls to prevent deadlock
+            setTimeout(() => {
+              linkLicenseToUser(currentSession.user.id, currentSession.user.email)
+                .catch(err => console.error('Erro ao vincular licença:', err));
+            }, 0);
           }
 
           if (!isMounted) return;
