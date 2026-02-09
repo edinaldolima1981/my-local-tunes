@@ -1,44 +1,39 @@
 
 
-# Corrigir o Loading Infinito do App
+# Remover o Sistema de Trial/Licenca do App
 
-## Problema Identificado
+## O que sera feito
 
-Depois que voce faz login, o app fica rodando (carregando) sem parar. Isso acontece por causa de duas verificacoes que travam:
+Remover completamente todo o sistema de trial, licenca e pagamento do app. Depois dessa mudanca, o app vai abrir direto sem nenhum bloqueio ou banner de trial.
 
-1. **Verificacao de admin** - tenta chamar o banco de dados para saber se voce eh admin, mas demora 5 segundos pra desistir
-2. **Verificacao de licenca** - faz outra chamada ao banco que tambem pode travar
+## Mudancas
 
-Enquanto essas duas nao terminam, o app fica no spinner de loading.
+### 1. `src/App.tsx`
+- Remover o import do `LicenseProvider` e `useLicense`
+- Remover o import do `PaymentScreen`
+- Remover o componente `LicenseGate` (que ja esta desativado mas ainda existe no codigo)
+- Remover o `LicenseProvider` do `MainApp`
+- O `Index` vai ser renderizado diretamente sem o wrapper `LicenseGate`
 
-## Solucao
+### 2. `src/pages/Index.tsx`
+- Remover o import do `TrialBanner`
+- Remover o componente `TrialBanner` da tela principal
 
-Simplificar essas verificacoes para que o app carregue rapido:
+### 3. `src/hooks/useAuth.tsx`
+- Remover o import do `getDeviceId` do `licenseService`
+- Remover a funcao `linkLicenseToUser` que vincula licenca ao usuario no login
+- Remover a chamada a `linkLicenseToUser` no evento `SIGNED_IN`
 
-1. **Remover a verificacao de admin do fluxo principal** - So verificar admin quando for necessario (na rota /admin). Usuarios normais nao precisam esperar isso.
+### Arquivos que serao mantidos (nao deletados)
+Os seguintes arquivos continuam existindo mas nao serao mais usados pelo fluxo principal. Eles podem ser removidos depois se voce quiser:
+- `src/services/licenseService.ts`
+- `src/hooks/useLicense.tsx`
+- `src/components/license/PaymentScreen.tsx`
+- `src/components/license/TrialBanner.tsx`
+- `src/components/admin/LicenseManager.tsx` (usado na rota /admin)
 
-2. **Tornar o LicenseGate mais simples** - Se a licenca ainda esta carregando, mostrar o app normalmente em vez de bloquear. So bloquear quando confirmar que a licenca expirou.
-
-3. **Adicionar timeout na verificacao de licenca** - Se demorar mais de 3 segundos, liberar o acesso e verificar em segundo plano.
-
-## Detalhes Tecnicos
-
-### Arquivo: `src/App.tsx`
-
-- Simplificar o `LicenseGate`: remover a verificacao `has_role` (admin check) deste componente
-- Enquanto `isLoading` for true, renderizar os `children` normalmente (em vez de mostrar loading)
-- So mostrar `PaymentScreen` quando `isLoading === false` E `status.isValid === false`
-
-### Arquivo: `src/hooks/useLicense.tsx`
-
-- Adicionar timeout de 3 segundos no `refreshStatus` - se o banco nao responder, assumir licenca valida (modo offline)
-- Evitar que o loading bloqueie a interface
-
-### Resultado Esperado
-
-- Splash screen aparece normalmente
-- Onboarding aparece (se for primeira vez)
-- Tela de login aparece
-- Apos login, o app carrega **imediatamente** sem ficar rodando
-- A verificacao de licenca acontece em segundo plano
+## Resultado
+- App abre direto apos o login, sem nenhum bloqueio
+- Sem banner de trial na tela
+- Sem verificacao de licenca em nenhum momento
 
