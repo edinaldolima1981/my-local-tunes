@@ -9,7 +9,8 @@ import {
   Search,
   Heart,
   Disc3,
-  Shield
+  Shield,
+  Home
 } from 'lucide-react';
 
 import { Track, Playlist } from '@/types/music';
@@ -40,6 +41,7 @@ interface LibraryScreenProps {
   onPlayAll: (tracks: Track[]) => void;
   onOpenFullscreen: () => void;
   searchTracks: (query: string) => Track[];
+  onGoHome: () => void;
   // Navigation from Home
   initialArtist?: Artist | null;
   initialAlbum?: Album | null;
@@ -59,6 +61,7 @@ export function LibraryScreen({
   onPlayAll,
   onOpenFullscreen,
   searchTracks,
+  onGoHome,
   initialArtist,
   initialAlbum,
   onClearInitial,
@@ -250,8 +253,18 @@ export function LibraryScreen({
         </div>
       ) : (
         <>
-          {/* Tab labels */}
+          {/* Tab labels with Home button */}
           <div className="flex items-center justify-between px-1">
+            {/* Home button */}
+            <button
+              onClick={onGoHome}
+              className="flex flex-col items-center gap-0.5 py-1 text-[10px] transition-all text-muted-foreground/60 hover:text-primary"
+            >
+              <Home size={14} />
+              <span>Home</span>
+            </button>
+            
+            {/* Library tabs */}
             {tabs.map((tab) => (
               <button
                 key={tab}
