@@ -225,6 +225,7 @@ const Index = () => {
                   onPlayAll={handlePlayAll}
                   onOpenFullscreen={() => setShowFullscreen(true)}
                   searchTracks={searchTracks}
+                  onGoHome={() => setMainTab('home')}
                   initialArtist={pendingArtist}
                   initialAlbum={pendingAlbum}
                   onClearInitial={handleClearPending}
