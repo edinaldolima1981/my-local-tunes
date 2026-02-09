@@ -82,13 +82,24 @@ export function HomeScreen({
         animate={{ opacity: 1, y: 0 }}
         className="flex items-center justify-center gap-3 mb-6 w-full"
       >
-        <motion.div
-          animate={{ rotate: isPlaying ? 360 : 0 }}
-          transition={{ duration: 3, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
-          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center"
-        >
-          <Music size={20} className="text-primary-foreground" />
-        </motion.div>
+        <div className="relative">
+          {/* Neon glow pulse */}
+          <motion.div
+            animate={{ 
+              opacity: [0.4, 0.8, 0.4],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              ease: "easeInOut" 
+            }}
+            className="absolute inset-0 rounded-full bg-primary blur-lg"
+          />
+          <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/50">
+            <Music size={20} className="text-primary-foreground" />
+          </div>
+        </div>
         <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
       </motion.header>
 
