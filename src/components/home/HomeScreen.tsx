@@ -95,35 +95,35 @@ export function HomeScreen({
         transition={{ duration: 0.5, type: 'spring' }}
         className="relative mb-8"
       >
-        {/* Neon pulse glow - intensified, only when playing */}
+        {/* Neon pulse glow - subtle, only when playing */}
         {isPlaying && (
           <>
-            {/* Outer large glow */}
+            {/* Outer glow */}
             <motion.div
               animate={{ 
-                opacity: [0.4, 0.8, 0.4],
-                scale: [1, 1.08, 1],
-              }}
-              transition={{ 
-                duration: 1.5, 
-                repeat: Infinity, 
-                ease: "easeInOut" 
-              }}
-              className="absolute -inset-4 rounded-3xl bg-primary blur-3xl"
-            />
-            {/* Inner intense glow */}
-            <motion.div
-              animate={{ 
-                opacity: [0.5, 0.9, 0.5],
+                opacity: [0.2, 0.4, 0.2],
                 scale: [1, 1.04, 1],
               }}
               transition={{ 
-                duration: 1.5, 
+                duration: 2, 
+                repeat: Infinity, 
+                ease: "easeInOut" 
+              }}
+              className="absolute -inset-3 rounded-3xl bg-primary blur-2xl"
+            />
+            {/* Inner glow */}
+            <motion.div
+              animate={{ 
+                opacity: [0.25, 0.45, 0.25],
+                scale: [1, 1.02, 1],
+              }}
+              transition={{ 
+                duration: 2, 
                 repeat: Infinity, 
                 ease: "easeInOut",
                 delay: 0.3
               }}
-              className="absolute -inset-2 rounded-3xl bg-primary/70 blur-xl"
+              className="absolute -inset-1 rounded-3xl bg-primary/50 blur-xl"
             />
           </>
         )}
