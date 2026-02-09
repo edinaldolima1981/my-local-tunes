@@ -153,4 +153,24 @@ export const formatTrialDays = (days: number): string => {
 
 // Valor da licença (para exibição)
 export const LICENSE_PRICE = 7.99;
-export const PIX_KEY = 'SEU_EMAIL_OU_CHAVE_PIX_AQUI'; // ⚠️ ALTERE PARA SUA CHAVE PIX
+
+// Busca chave PIX do banco de dados (configurada pelo admin)
+export const getPixKey = async (): Promise<string> => {
+  try {
+    const { data, error } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'pix_key')
+      .single();
+
+    if (error || !data) {
+      console.error('Erro ao buscar chave PIX:', error);
+      return 'CHAVE_PIX_NAO_CONFIGURADA';
+    }
+
+    return data.value;
+  } catch (error) {
+    console.error('Erro ao buscar chave PIX:', error);
+    return 'CHAVE_PIX_NAO_CONFIGURADA';
+  }
+};

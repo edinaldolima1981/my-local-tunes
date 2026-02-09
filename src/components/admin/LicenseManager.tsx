@@ -18,7 +18,9 @@ import {
   Copy,
   Check,
   LogOut,
-  Loader2
+  Loader2,
+  Settings,
+  Save
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +46,9 @@ const AdminDashboard = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState<LicenseStats>({ total: 0, paid: 0, trial: 0, expired: 0 });
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [pixKey, setPixKey] = useState('');
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // Verifica se usuário é admin usando função do banco
   const checkAdminRole = useCallback(async () => {
@@ -109,11 +114,54 @@ const AdminDashboard = () => {
     }
   };
 
+  // Carrega configurações do app
+  const loadSettings = useCallback(async () => {
+    try {
+      const { data } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'pix_key')
+        .single();
+      
+      if (data) {
+        setPixKey(data.value);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar configurações:', error);
+    }
+  }, []);
+
   useEffect(() => {
     if (isAdmin) {
       loadLicenses();
+      loadSettings();
     }
-  }, [isAdmin]);
+  }, [isAdmin, loadSettings]);
+
+  const handleSavePixKey = async () => {
+    if (!pixKey.trim()) {
+      toast.error('Digite a chave PIX');
+      return;
+    }
+
+    setIsSavingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ value: pixKey })
+        .eq('key', 'pix_key');
+
+      if (error) throw error;
+
+      toast.success('Chave PIX salva com sucesso!');
+      setShowSettings(false);
+    } catch (error) {
+      console.error('Erro ao salvar chave PIX:', error);
+      toast.error('Erro ao salvar chave PIX');
+    } finally {
+      setIsSavingSettings(false);
+    }
+  };
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -271,6 +319,14 @@ const AdminDashboard = () => {
             <Button
               variant="outline"
               size="icon"
+              onClick={() => setShowSettings(!showSettings)}
+              title="Configurações"
+            >
+              <Settings size={18} />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={loadLicenses}
               disabled={isLoading}
             >
@@ -285,6 +341,40 @@ const AdminDashboard = () => {
             </Button>
           </div>
         </div>
+
+        {/* Settings Panel */}
+        {showSettings && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="bg-card rounded-xl border border-border p-4 mb-6"
+          >
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Settings size={18} />
+              Configurações
+            </h2>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Chave PIX</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={pixKey}
+                    onChange={(e) => setPixKey(e.target.value)}
+                    placeholder="Sua chave PIX (email, CPF, celular ou aleatória)"
+                    className="flex-1"
+                  />
+                  <Button onClick={handleSavePixKey} disabled={isSavingSettings}>
+                    {isSavingSettings ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Esta chave será exibida para os usuários na tela de pagamento.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">

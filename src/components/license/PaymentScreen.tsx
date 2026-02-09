@@ -4,7 +4,7 @@
  * Exibida quando o trial expira. Mostra instruções para pagamento via PIX.
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Lock, 
@@ -19,7 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLicense } from '@/hooks/useLicense';
-import { LICENSE_PRICE, PIX_KEY } from '@/services/licenseService';
+import { LICENSE_PRICE, getPixKey } from '@/services/licenseService';
 import { toast } from 'sonner';
 
 export const PaymentScreen = () => {
@@ -28,10 +28,20 @@ export const PaymentScreen = () => {
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showInstructions, setShowInstructions] = useState(false);
+  const [pixKey, setPixKey] = useState<string>('Carregando...');
+
+  // Carrega a chave PIX do banco
+  useEffect(() => {
+    const loadPixKey = async () => {
+      const key = await getPixKey();
+      setPixKey(key);
+    };
+    loadPixKey();
+  }, []);
 
   const handleCopyPix = async () => {
     try {
-      await navigator.clipboard.writeText(PIX_KEY);
+      await navigator.clipboard.writeText(pixKey);
       setCopied(true);
       toast.success('Chave PIX copiada!');
       setTimeout(() => setCopied(false), 3000);
@@ -167,7 +177,7 @@ export const PaymentScreen = () => {
             </div>
             <div className="flex items-center gap-2">
               <code className="flex-1 bg-background rounded-lg px-3 py-2 text-sm font-mono truncate">
-                {PIX_KEY}
+                {pixKey}
               </code>
               <Button
                 variant="outline"
