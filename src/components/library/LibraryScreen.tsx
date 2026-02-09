@@ -7,7 +7,9 @@ import {
   ListMusic,
   Music,
   Search,
-  Heart
+  Heart,
+  Disc3,
+  Shield
 } from 'lucide-react';
 
 import { Track, Playlist } from '@/types/music';
@@ -210,6 +212,27 @@ export function LibraryScreen({
 
   return (
     <div className="space-y-4">
+      {/* Header */}
+      <motion.header 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-3 mb-2"
+      >
+        <motion.div
+          animate={{ rotate: isPlaying ? 360 : 0 }}
+          transition={{ duration: 3, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
+        >
+          <Disc3 className="text-primary" size={32} />
+        </motion.div>
+        <div>
+          <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
+          <p className="text-xs text-muted-foreground flex items-center gap-1">
+            <Shield size={10} />
+            Biblioteca • {tracks.length} músicas
+          </p>
+        </div>
+      </motion.header>
+
       <SearchBar value={searchQuery} onChange={setSearchQuery} />
 
       {searchQuery ? (
