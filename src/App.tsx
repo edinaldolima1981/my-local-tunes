@@ -13,6 +13,7 @@ import { SplashScreen } from "@/components/welcome/SplashScreen";
 import { Onboarding } from "@/components/welcome/Onboarding";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { PaymentScreen } from "@/components/license/PaymentScreen";
+import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
 import Admin from "./pages/Admin";
@@ -20,12 +21,31 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-// Componente que verifica licença e bloqueia se necessário
+// Componente que verifica licença e bloqueia se necessário (admins são isentos)
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   const { status, isLoading } = useLicense();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      const { data } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+      setIsAdmin(data === true);
+    };
+    checkAdmin();
+  }, [user]);
 
   // Enquanto carrega, mostra nada
-  if (isLoading) return null;
+  if (isLoading || isAdmin === null) return null;
+
+  // Admins têm acesso total, sem restrição de licença
+  if (isAdmin) {
+    return <>{children}</>;
+  }
 
   // Se licença inválida (trial expirado e não pago), mostra tela de pagamento
   if (status && !status.isValid) {
