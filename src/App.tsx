@@ -72,7 +72,6 @@ const AuthGate = ({ children }: { children: React.ReactNode }) => {
 const MainApp = () => {
   const [showSplash, setShowSplash] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding') === 'true';
@@ -83,38 +82,50 @@ const MainApp = () => {
 
   const handleSplashComplete = () => {
     setShowSplash(false);
-    if (!showOnboarding) {
-      setIsReady(true);
-    }
   };
 
   const handleOnboardingComplete = () => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
     setShowOnboarding(false);
-    setIsReady(true);
   };
 
+  // Splash screen
+  if (showSplash) {
+    return (
+      <AuthProvider>
+        <LicenseProvider>
+          <SplashScreen onComplete={handleSplashComplete} />
+        </LicenseProvider>
+      </AuthProvider>
+    );
+  }
+
+  // Onboarding
+  if (showOnboarding) {
+    return (
+      <AuthProvider>
+        <LicenseProvider>
+          <Onboarding onComplete={handleOnboardingComplete} />
+        </LicenseProvider>
+      </AuthProvider>
+    );
+  }
+
+  // App principal
   return (
     <AuthProvider>
       <LicenseProvider>
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-
-        {!showSplash && showOnboarding && (
-          <Onboarding onComplete={handleOnboardingComplete} />
-        )}
-
-        {isReady && (
-          <AuthGate>
-            <MusicLibraryProvider>
-              <PlaylistProvider>
-                <FavoritesProvider>
-                  <LicenseGate>
-                    <Index />
-                  </LicenseGate>
-                </FavoritesProvider>
-              </PlaylistProvider>
-            </MusicLibraryProvider>
-          </AuthGate>
-        )}
+        <AuthGate>
+          <MusicLibraryProvider>
+            <PlaylistProvider>
+              <FavoritesProvider>
+                <LicenseGate>
+                  <Index />
+                </LicenseGate>
+              </FavoritesProvider>
+            </PlaylistProvider>
+          </MusicLibraryProvider>
+        </AuthGate>
       </LicenseProvider>
     </AuthProvider>
   );
