@@ -73,22 +73,27 @@ export const checkLicenseStatus = async (): Promise<LicenseStatus> => {
   const deviceId = getDeviceId();
   
   try {
-    // Busca sessão atual do usuário
     const { data: { session } } = await supabase.auth.getSession();
+    console.log('[license] session:', session?.user?.id ?? 'none');
     
     if (session?.user) {
-      // Usuário autenticado - busca licença por user_id
-      const license = await getLicenseForUser(session.user.id);
-      
-      if (license) {
+      const { data: license, error } = await supabase
+        .from('user_licenses')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      console.log('[license] query result:', { license, error: error?.message });
+
+      if (license && !error) {
         const now = new Date();
         const trialEndsAt = new Date(license.trial_ends_at);
-        const timeDiff = trialEndsAt.getTime() - now.getTime();
-        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-
+        const daysLeft = Math.ceil((trialEndsAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         const isTrialActive = daysLeft > 0;
         const isPaid = license.is_paid;
         const isValid = isPaid || isTrialActive;
+
+        console.log('[license] status:', { isPaid, isTrialActive, isValid, daysLeft });
 
         return {
           isValid,
@@ -102,7 +107,8 @@ export const checkLicenseStatus = async (): Promise<LicenseStatus> => {
       }
     }
 
-    // Sem licença ou não autenticado - modo offline/trial
+    // Sem licença encontrada - libera acesso (modo offline/novo usuário)
+    console.log('[license] no license found, granting access');
     return {
       isValid: true,
       isPaid: false,
@@ -113,7 +119,7 @@ export const checkLicenseStatus = async (): Promise<LicenseStatus> => {
       license: null,
     };
   } catch (error) {
-    console.error('Erro ao verificar licença:', error);
+    console.error('[license] error:', error);
     return {
       isValid: true,
       isPaid: false,
