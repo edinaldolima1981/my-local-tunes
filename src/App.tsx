@@ -35,17 +35,17 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminChecked, setAdminChecked] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   // Verifica se é admin (bypass total)
   useEffect(() => {
     let cancelled = false;
     const checkAdmin = async () => {
-      if (!user) {
-        setIsAdmin(false);
-        setAdminChecked(true);
-        return;
-      }
       try {
+        if (!user) {
+          if (!cancelled) { setIsAdmin(false); setAdminChecked(true); }
+          return;
+        }
         const { data } = await supabase
           .from('user_roles')
           .select('role')
@@ -53,27 +53,35 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
           .eq('role', 'admin')
           .maybeSingle();
         if (!cancelled) setIsAdmin(!!data);
-      } catch {
-        if (!cancelled) setIsAdmin(false);
+      } catch (err) {
+        console.error('[LicenseGate] Erro ao verificar admin:', err);
+        if (!cancelled) { setIsAdmin(false); setHasError(true); }
       } finally {
         if (!cancelled) setAdminChecked(true);
       }
     };
 
-    // Timeout de 3s para não travar
+    // Timeout de 2s para não travar (especialmente no iOS)
     const timeout = setTimeout(() => {
-      if (!cancelled) {
+      if (!cancelled && !adminChecked) {
+        console.warn('[LicenseGate] Admin check timeout - liberando acesso');
         setAdminChecked(true);
+        setHasError(true);
       }
-    }, 3000);
+    }, 2000);
 
     checkAdmin();
     return () => { cancelled = true; clearTimeout(timeout); };
   }, [user]);
 
-  // Enquanto carrega, mostra loading
+  // Enquanto carrega, mostra loading (max 2s pelo timeout)
   if (licenseLoading || !adminChecked) {
     return <LoadingScreen />;
+  }
+
+  // Se houve erro na verificação, libera acesso (fail-open)
+  if (hasError) {
+    return <>{children}</>;
   }
 
   // Admin tem acesso total
@@ -160,6 +168,16 @@ const MainApp = () => {
 };
 
 const App = () => {
+  // Captura erros assíncronos não tratados (previne tela preta no iOS)
+  useEffect(() => {
+    const handleRejection = (event: PromiseRejectionEvent) => {
+      console.error('[App] Unhandled rejection:', event.reason);
+      event.preventDefault();
+    };
+    window.addEventListener('unhandledrejection', handleRejection);
+    return () => window.removeEventListener('unhandledrejection', handleRejection);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
