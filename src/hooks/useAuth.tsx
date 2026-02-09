@@ -32,60 +32,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     let isMounted = true;
-    setIsLoading(true);
 
-    // Failsafe: nunca ficar preso em loading indefinidamente
-    const loadingTimeout = window.setTimeout(() => {
-      if (!isMounted) return;
-      console.warn('[auth] timeout ao inicializar sessão; continuando sem sessão');
-      setIsLoading(false);
-    }, 5000);
+    // Listener para mudanças CONTÍNUAS de auth (NÃO controla isLoading)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, currentSession) => {
+        if (!isMounted) return;
+        console.debug('[auth] event:', event);
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+      }
+    );
 
-    let subscription: { unsubscribe: () => void } | null = null;
-
-    const init = async () => {
+    // Carga INICIAL (controla isLoading)
+    const initializeAuth = async () => {
       try {
-        // Listener de mudanças de sessão
-        const { data } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-          if (!isMounted) return;
-
-          console.debug('[auth] event:', event);
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-
-
-          if (!isMounted) return;
-          window.clearTimeout(loadingTimeout);
-          setIsLoading(false);
-        });
-
-        subscription = data.subscription;
-
-        // Busca sessão existente (não depende de rede na maioria dos casos)
         const { data: sessionData, error } = await supabase.auth.getSession();
         if (error) {
           console.error('[auth] erro ao obter sessão:', error);
         }
-
         if (!isMounted) return;
         setSession(sessionData.session);
         setUser(sessionData.session?.user ?? null);
-        window.clearTimeout(loadingTimeout);
-        setIsLoading(false);
       } catch (error) {
         console.error('[auth] erro ao inicializar auth:', error);
-        if (!isMounted) return;
-        window.clearTimeout(loadingTimeout);
-        setIsLoading(false);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
     };
 
-    init();
+    // Failsafe: nunca ficar preso em loading
+    const loadingTimeout = window.setTimeout(() => {
+      if (isMounted) setIsLoading(false);
+    }, 5000);
+
+    initializeAuth().then(() => window.clearTimeout(loadingTimeout));
 
     return () => {
       isMounted = false;
       window.clearTimeout(loadingTimeout);
-      subscription?.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
