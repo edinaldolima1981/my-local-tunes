@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Artist, Album } from '@/hooks/useLibraryOrganization';
+import { VideoPlayer } from '@/components/player/VideoPlayer';
 import defaultCover from '@/assets/default-cover.jpg';
 
 interface HomeScreenProps {
@@ -138,16 +139,26 @@ export function HomeScreen({
         
         {/* Neumorphic container */}
         <div className="relative p-4 rounded-3xl neu-card">
-          {/* Fixed album art - no rotation */}
-          <div className="relative">
-            <img
-              src={coverUrl}
-              alt={currentTrack?.title || 'Album Cover'}
-              className="w-64 h-64 sm:w-72 sm:h-72 rounded-2xl object-cover shadow-2xl"
-            />
-            
-            {/* Vinyl effect overlay */}
-            <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+          {/* Video or Album Art */}
+          <div className="relative w-64 h-64 sm:w-72 sm:h-72 rounded-2xl overflow-hidden shadow-2xl">
+            {currentTrack?.mediaType === 'video' ? (
+              <VideoPlayer
+                src={currentTrack.uri}
+                isPlaying={isPlaying}
+                currentTime={currentTime}
+                repeat={repeat}
+              />
+            ) : (
+              <>
+                <img
+                  src={coverUrl}
+                  alt={currentTrack?.title || 'Album Cover'}
+                  className="w-full h-full object-cover"
+                />
+                {/* Vinyl effect overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+              </>
+            )}
           </div>
         </div>
       </motion.div>
