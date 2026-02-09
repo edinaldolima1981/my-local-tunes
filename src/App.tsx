@@ -158,19 +158,15 @@ const AppContent = () => {
     return <LoadingScreen />;
   }
 
-  // App principal com autenticação
+  // App principal - acesso livre (sem autenticação durante testes)
   return (
-    <AuthGate>
-      <MusicLibraryProvider>
-        <PlaylistProvider>
-          <FavoritesProvider>
-            <LicenseGate>
-              <Index />
-            </LicenseGate>
-          </FavoritesProvider>
-        </PlaylistProvider>
-      </MusicLibraryProvider>
-    </AuthGate>
+    <MusicLibraryProvider>
+      <PlaylistProvider>
+        <FavoritesProvider>
+          <Index />
+        </FavoritesProvider>
+      </PlaylistProvider>
+    </MusicLibraryProvider>
   );
 };
 
