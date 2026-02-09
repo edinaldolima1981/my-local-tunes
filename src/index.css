@@ -135,6 +135,48 @@
     -webkit-backdrop-filter: blur(20px);
   }
 
+  /* Neumorphism styles */
+  .neu-raised {
+    background: hsl(220 18% 10%);
+    box-shadow: 
+      8px 8px 16px hsl(220 20% 5%),
+      -8px -8px 16px hsl(220 15% 15%);
+  }
+
+  .neu-inset {
+    background: hsl(220 18% 8%);
+    box-shadow: 
+      inset 4px 4px 8px hsl(220 20% 5%),
+      inset -4px -4px 8px hsl(220 15% 12%);
+  }
+
+  .neu-button {
+    background: hsl(220 18% 10%);
+    box-shadow: 
+      6px 6px 12px hsl(220 20% 5%),
+      -6px -6px 12px hsl(220 15% 15%);
+    transition: all 0.2s ease;
+  }
+
+  .neu-button:hover {
+    box-shadow: 
+      4px 4px 8px hsl(220 20% 5%),
+      -4px -4px 8px hsl(220 15% 15%);
+  }
+
+  .neu-button:active {
+    box-shadow: 
+      inset 4px 4px 8px hsl(220 20% 5%),
+      inset -4px -4px 8px hsl(220 15% 12%);
+  }
+
+  .neu-card {
+    background: hsl(220 18% 10%);
+    box-shadow: 
+      12px 12px 24px hsl(220 20% 4%),
+      -12px -12px 24px hsl(220 15% 14%);
+  }
+
   .safe-area-inset {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);

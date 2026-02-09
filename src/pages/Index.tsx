@@ -58,7 +58,7 @@ const Index = () => {
   const { tracks, customAlbums, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
   const { artists, albums, searchTracks } = useLibraryOrganization(tracks, customAlbums);
   const { resolvePlaylists } = usePlaylists();
-  const { favoritesCount } = useFavorites();
+  const { favoritesCount, isFavorite, toggleFavorite } = useFavorites();
 
   // Resolve playlists when library loads
   useEffect(() => {
@@ -223,11 +223,24 @@ const Index = () => {
                   tracksCount={tracks.length}
                   isPlaying={player.isPlaying}
                   favoritesCount={favoritesCount}
+                  currentTrack={player.currentTrack}
+                  currentTime={player.currentTime}
+                  duration={player.duration}
+                  shuffle={player.shuffle}
+                  repeat={player.repeat}
                   onArtistSelect={handleArtistSelect}
                   onAlbumSelect={handleAlbumSelect}
                   onQuickNavigate={handleQuickNavigate}
                   onSeeAllArtists={handleSeeAllArtists}
                   onSeeAllAlbums={handleSeeAllAlbums}
+                  onTogglePlay={player.togglePlay}
+                  onPrevious={player.handlePrevious}
+                  onNext={player.handleNext}
+                  onToggleShuffle={player.toggleShuffle}
+                  onToggleRepeat={player.toggleRepeat}
+                  onSeek={player.seek}
+                  isFavorite={player.currentTrack ? isFavorite(player.currentTrack.id) : false}
+                  onToggleFavorite={() => player.currentTrack && toggleFavorite(player.currentTrack.id)}
                 />
               </motion.div>
             ) : (
