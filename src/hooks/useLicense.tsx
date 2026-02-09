@@ -35,12 +35,28 @@ export const LicenseProvider = ({ children }: LicenseProviderProps) => {
     try {
       setIsLoading(true);
       setError(null);
-      const licenseStatus = await checkLicenseStatus();
+
+      // Timeout de 3 segundos - se não responder, libera acesso
+      const timeoutPromise = new Promise<LicenseStatus>((resolve) =>
+        setTimeout(() => resolve({
+          isValid: true,
+          isPaid: false,
+          isTrialActive: true,
+          trialDaysLeft: 0,
+          trialEndsAt: null,
+          deviceId: getDeviceId(),
+          license: null,
+        }), 3000)
+      );
+
+      const licenseStatus = await Promise.race([
+        checkLicenseStatus(),
+        timeoutPromise,
+      ]);
       setStatus(licenseStatus);
     } catch (err) {
       console.error('Erro ao verificar licença:', err);
       setError('Não foi possível verificar a licença');
-      // Em caso de erro, permite uso (modo offline)
       setStatus({
         isValid: true,
         isPaid: false,

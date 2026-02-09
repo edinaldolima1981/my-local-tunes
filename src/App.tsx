@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -9,11 +9,12 @@ import { PlaylistProvider } from "@/hooks/usePlaylists";
 import { FavoritesProvider } from "@/hooks/useFavorites";
 import { LicenseProvider, useLicense } from "@/hooks/useLicense";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+// supabase import removed - no longer needed in LicenseGate
 import { SplashScreen } from "@/components/welcome/SplashScreen";
 import { Onboarding } from "@/components/welcome/Onboarding";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { PaymentScreen } from "@/components/license/PaymentScreen";
-import { supabase } from "@/integrations/supabase/client";
+
 import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
@@ -29,64 +30,17 @@ const LoadingScreen = () => (
   </div>
 );
 
-// Componente que verifica licença e bloqueia se necessário (admins são isentos)
+// Componente que verifica licença - não bloqueia durante loading
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   const { status, isLoading } = useLicense();
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
-  useEffect(() => {
-    let alive = true;
-    setIsAdmin(null);
-
-    const timeout = window.setTimeout(() => {
-      if (!alive) return;
-      console.warn('[license] timeout ao verificar admin; assumindo não-admin');
-      setIsAdmin(false);
-    }, 5000);
-
-    const checkAdmin = async () => {
-      try {
-        if (!user) {
-          setIsAdmin(false);
-          return;
-        }
-
-        const { data, error } = await supabase.rpc('has_role', {
-          _user_id: user.id,
-          _role: 'admin',
-        });
-
-        if (error) throw error;
-        setIsAdmin(data === true);
-      } catch (error) {
-        console.error('[license] erro ao verificar admin:', error);
-        setIsAdmin(false);
-      } finally {
-        window.clearTimeout(timeout);
-      }
-    };
-
-    checkAdmin();
-
-    return () => {
-      alive = false;
-      window.clearTimeout(timeout);
-    };
-  }, [user]);
-
-  // Enquanto carrega, mostra loading
-  if (isLoading || isAdmin === null) {
-    return <LoadingScreen />;
-  }
-
-  // Admins têm acesso total, sem restrição de licença
-  if (isAdmin) {
+  // Enquanto carrega, mostra o app normalmente (não bloqueia)
+  if (isLoading || !status) {
     return <>{children}</>;
   }
 
-  // Se licença inválida (trial expirado e não pago), mostra tela de pagamento
-  if (status && !status.isValid) {
+  // Só bloqueia quando confirmado que licença é inválida
+  if (!status.isValid) {
     return <PaymentScreen />;
   }
 
