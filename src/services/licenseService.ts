@@ -153,5 +153,5 @@ export const formatTrialDays = (days: number): string => {
 };
 
 // Valor da licença (para exibição)
-export const LICENSE_PRICE = 29.90;
+export const LICENSE_PRICE = 7.99;
 export const PIX_KEY = 'SEU_EMAIL_OU_CHAVE_PIX_AQUI'; // ⚠️ ALTERE PARA SUA CHAVE PIX
