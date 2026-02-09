@@ -67,27 +67,70 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, []);
 
   useEffect(() => {
-    // Configura listener ANTES de getSession
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
-      setSession(currentSession);
-      setUser(currentSession?.user ?? null);
-      
-      // Quando usuário faz login, vincula à licença e inicia trial
-      if (event === 'SIGNED_IN' && currentSession?.user) {
-        await linkLicenseToUser(currentSession.user.id, currentSession.user.email);
+    let isMounted = true;
+    setIsLoading(true);
+
+    // Failsafe: nunca ficar preso em loading indefinidamente
+    const loadingTimeout = window.setTimeout(() => {
+      if (!isMounted) return;
+      console.warn('[auth] timeout ao inicializar sessão; continuando sem sessão');
+      setIsLoading(false);
+    }, 5000);
+
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    const init = async () => {
+      try {
+        // Listener de mudanças de sessão
+        const { data } = supabase.auth.onAuthStateChange(async (event, currentSession) => {
+          if (!isMounted) return;
+
+          console.debug('[auth] event:', event);
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+
+          // Quando usuário faz login, vincula à licença e inicia trial
+          if (event === 'SIGNED_IN' && currentSession?.user) {
+            try {
+              await linkLicenseToUser(currentSession.user.id, currentSession.user.email);
+            } catch (error) {
+              console.error('Erro ao vincular licença ao usuário:', error);
+            }
+          }
+
+          if (!isMounted) return;
+          window.clearTimeout(loadingTimeout);
+          setIsLoading(false);
+        });
+
+        subscription = data.subscription;
+
+        // Busca sessão existente (não depende de rede na maioria dos casos)
+        const { data: sessionData, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('[auth] erro ao obter sessão:', error);
+        }
+
+        if (!isMounted) return;
+        setSession(sessionData.session);
+        setUser(sessionData.session?.user ?? null);
+        window.clearTimeout(loadingTimeout);
+        setIsLoading(false);
+      } catch (error) {
+        console.error('[auth] erro ao inicializar auth:', error);
+        if (!isMounted) return;
+        window.clearTimeout(loadingTimeout);
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
-    });
+    };
 
-    // Busca sessão existente
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      setUser(existingSession?.user ?? null);
-      setIsLoading(false);
-    });
+    init();
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      window.clearTimeout(loadingTimeout);
+      subscription?.unsubscribe();
+    };
   }, [linkLicenseToUser]);
 
   const signInWithGoogle = useCallback(async () => {
