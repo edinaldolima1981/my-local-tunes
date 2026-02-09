@@ -130,7 +130,7 @@ export function CategoryDetail({
           type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
-          accept="audio/*"
+          accept="audio/*,audio/mpeg,audio/mp3,audio/wav,audio/flac,audio/aac,audio/ogg,audio/x-m4a,audio/mp4,.mp3,.wav,.flac,.aac,.ogg,.m4a,.wma"
           multiple
           className="hidden"
         />
