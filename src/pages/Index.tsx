@@ -305,20 +305,20 @@ const Index = () => {
         ) : (
           // Swipeable tabs
           <>
-            {/* Tab indicator dots */}
-            <div className="flex items-center justify-center gap-3 py-2">
-              {tabs.map((tab, i) => (
+            {/* Tab labels */}
+            <div className="flex items-center justify-between px-1">
+              {tabs.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setLibraryTab(tab)}
-                  className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all ${
+                  className={`flex flex-col items-center gap-0.5 py-1 text-[10px] transition-all ${
                     libraryTab === tab 
                       ? 'text-primary font-medium' 
                       : 'text-muted-foreground/60'
                   }`}
                 >
                   {tabIcons[tab]}
-                  {libraryTab === tab && <span>{tabLabels[tab]}</span>}
+                  <span>{tabLabels[tab]}</span>
                 </button>
               ))}
             </div>
