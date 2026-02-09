@@ -7,13 +7,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MusicLibraryProvider } from "@/hooks/useMusicLibrary";
 import { PlaylistProvider } from "@/hooks/usePlaylists";
 import { FavoritesProvider } from "@/hooks/useFavorites";
-import { LicenseProvider, useLicense } from "@/hooks/useLicense";
+
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { SplashScreen } from "@/components/welcome/SplashScreen";
 import { Onboarding } from "@/components/welcome/Onboarding";
 import { AuthScreen } from "@/components/auth/AuthScreen";
-import { PaymentScreen } from "@/components/license/PaymentScreen";
+
 
 import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
@@ -30,10 +30,6 @@ const LoadingScreen = () => (
   </div>
 );
 
-// LicenseGate desativado temporariamente para garantir acesso
-const LicenseGate = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
-};
 
 // Gate de autenticação - exige login antes de acessar o app
 const AuthGate = ({ children }: { children: React.ReactNode }) => {
@@ -82,9 +78,7 @@ const AppContent = () => {
       <MusicLibraryProvider>
         <PlaylistProvider>
           <FavoritesProvider>
-            <LicenseGate>
-              <Index />
-            </LicenseGate>
+            <Index />
           </FavoritesProvider>
         </PlaylistProvider>
       </MusicLibraryProvider>
@@ -96,9 +90,7 @@ const AppContent = () => {
 const MainApp = () => {
   return (
     <AuthProvider>
-      <LicenseProvider>
-        <AppContent />
-      </LicenseProvider>
+      <AppContent />
     </AuthProvider>
   );
 };
