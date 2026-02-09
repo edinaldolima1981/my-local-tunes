@@ -2,7 +2,7 @@
  * @fileoverview Serviço de gerenciamento de licenças
  * 
  * Controla o período de trial e status de pagamento dos usuários.
- * Funciona com device_id único para identificar cada instalação.
+ * Funciona com user_id (autenticado) ou device_id (fallback).
  */
 
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 export interface UserLicense {
   id: string;
   device_id: string;
+  user_id?: string | null;
   email: string | null;
   trial_started_at: string;
   trial_ends_at: string;
@@ -33,11 +34,9 @@ export interface LicenseStatus {
 
 // Gera um ID único para o dispositivo
 const generateDeviceId = (): string => {
-  // Tenta recuperar ID existente
   const existingId = localStorage.getItem('device_id');
   if (existingId) return existingId;
 
-  // Gera novo ID baseado em timestamp + random
   const newId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
   localStorage.setItem('device_id', newId);
   return newId;
@@ -48,58 +47,75 @@ export const getDeviceId = (): string => {
   return generateDeviceId();
 };
 
-// Busca ou cria licença para o dispositivo
-export const getOrCreateLicense = async (): Promise<UserLicense | null> => {
-  const deviceId = getDeviceId();
-
+// Busca licença do usuário autenticado
+export const getLicenseForUser = async (userId: string): Promise<UserLicense | null> => {
   try {
-    // Primeiro, tenta buscar licença existente
-    const { data: existingLicense, error: fetchError } = await supabase
+    const { data, error } = await supabase
       .from('user_licenses')
       .select('*')
-      .eq('device_id', deviceId)
+      .eq('user_id', userId)
       .maybeSingle();
 
-    if (fetchError) {
-      console.error('Erro ao buscar licença:', fetchError);
+    if (error) {
+      console.error('Erro ao buscar licença do usuário:', error);
       return null;
     }
 
-    if (existingLicense) {
-      return existingLicense;
-    }
-
-    // Se não existe, cria nova licença com trial de 7 dias
-    const { data: newLicense, error: insertError } = await supabase
-      .from('user_licenses')
-      .insert({
-        device_id: deviceId,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error('Erro ao criar licença:', insertError);
-      return null;
-    }
-
-    return newLicense;
+    return data;
   } catch (error) {
-    console.error('Erro no serviço de licença:', error);
+    console.error('Erro ao buscar licença:', error);
     return null;
   }
 };
 
-// Verifica o status completo da licença
+// Verifica o status completo da licença (para usuário autenticado)
 export const checkLicenseStatus = async (): Promise<LicenseStatus> => {
   const deviceId = getDeviceId();
-  const license = await getOrCreateLicense();
+  
+  try {
+    // Busca sessão atual do usuário
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      // Usuário autenticado - busca licença por user_id
+      const license = await getLicenseForUser(session.user.id);
+      
+      if (license) {
+        const now = new Date();
+        const trialEndsAt = new Date(license.trial_ends_at);
+        const timeDiff = trialEndsAt.getTime() - now.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
 
-  if (!license) {
-    // Se falhou ao obter licença (sem internet), permite uso offline
-    // mas marca como inválido para mostrar aviso
+        const isTrialActive = daysLeft > 0;
+        const isPaid = license.is_paid;
+        const isValid = isPaid || isTrialActive;
+
+        return {
+          isValid,
+          isPaid,
+          isTrialActive: !isPaid && isTrialActive,
+          trialDaysLeft: Math.max(0, daysLeft),
+          trialEndsAt,
+          deviceId,
+          license,
+        };
+      }
+    }
+
+    // Sem licença ou não autenticado - modo offline/trial
     return {
-      isValid: true, // Permite uso offline
+      isValid: true,
+      isPaid: false,
+      isTrialActive: true,
+      trialDaysLeft: 0,
+      trialEndsAt: null,
+      deviceId,
+      license: null,
+    };
+  } catch (error) {
+    console.error('Erro ao verificar licença:', error);
+    return {
+      isValid: true,
       isPaid: false,
       isTrialActive: true,
       trialDaysLeft: 0,
@@ -108,36 +124,19 @@ export const checkLicenseStatus = async (): Promise<LicenseStatus> => {
       license: null,
     };
   }
-
-  const now = new Date();
-  const trialEndsAt = new Date(license.trial_ends_at);
-  const timeDiff = trialEndsAt.getTime() - now.getTime();
-  const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
-
-  const isTrialActive = daysLeft > 0;
-  const isPaid = license.is_paid;
-  const isValid = isPaid || isTrialActive;
-
-  return {
-    isValid,
-    isPaid,
-    isTrialActive: !isPaid && isTrialActive,
-    trialDaysLeft: Math.max(0, daysLeft),
-    trialEndsAt,
-    deviceId,
-    license,
-  };
 };
 
-// Atualiza email do usuário (opcional, para contato)
+// Atualiza email do usuário
 export const updateLicenseEmail = async (email: string): Promise<boolean> => {
-  const deviceId = getDeviceId();
-
   try {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user) return false;
+
     const { error } = await supabase
       .from('user_licenses')
       .update({ email })
-      .eq('device_id', deviceId);
+      .eq('user_id', session.user.id);
 
     return !error;
   } catch {
