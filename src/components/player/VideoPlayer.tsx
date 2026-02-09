@@ -8,41 +8,27 @@ interface VideoPlayerProps {
   repeat: RepeatMode;
 }
 
-export function VideoPlayer({ src, isPlaying, currentTime, repeat }: VideoPlayerProps) {
+export function VideoPlayer({ src, isPlaying, repeat }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hasInitialized = useRef(false);
 
-  // Sync Play/Pause only
+  // Sync Play/Pause only - no time sync to avoid audio stuttering
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (isPlaying && video.paused) {
-      video.play().catch(() => { });
+      video.play().catch(() => {});
     } else if (!isPlaying && !video.paused) {
       video.pause();
     }
   }, [isPlaying]);
 
-  // Initial setup - seek to start position ONCE when video loads
+  // Set video properties on load
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || hasInitialized.current) return;
-
-    const handleLoadedMetadata = () => {
-      if (currentTime > 0) {
-        video.currentTime = currentTime;
-      }
-      hasInitialized.current = true;
-    };
-
-    video.addEventListener('loadedmetadata', handleLoadedMetadata);
+    if (!video) return;
     video.volume = 0; // Muted - audio handled by main player
-
-    return () => {
-      video.removeEventListener('loadedmetadata', handleLoadedMetadata);
-    };
-  }, [currentTime]);
+  }, []);
 
   return (
     <video
