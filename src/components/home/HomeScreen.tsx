@@ -75,7 +75,23 @@ export function HomeScreen({
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4">
+    <div className="flex flex-col items-center min-h-[70vh] px-4">
+      {/* App Header */}
+      <motion.header
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-center gap-3 mb-6 w-full"
+      >
+        <motion.div
+          animate={{ rotate: isPlaying ? 360 : 0 }}
+          transition={{ duration: 3, repeat: isPlaying ? Infinity : 0, ease: "linear" }}
+          className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center"
+        >
+          <Music size={20} className="text-primary-foreground" />
+        </motion.div>
+        <h1 className="text-2xl font-bold text-gradient-primary">Music Player</h1>
+      </motion.header>
+
       {/* Album Art with Neumorphic Frame */}
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
