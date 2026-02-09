@@ -14,7 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      user_licenses: {
+        Row: {
+          created_at: string
+          device_id: string
+          email: string | null
+          id: string
+          is_paid: boolean
+          paid_at: string | null
+          payment_method: string | null
+          stripe_payment_id: string | null
+          trial_ends_at: string
+          trial_started_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          email?: string | null
+          id?: string
+          is_paid?: boolean
+          paid_at?: string | null
+          payment_method?: string | null
+          stripe_payment_id?: string | null
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          email?: string | null
+          id?: string
+          is_paid?: boolean
+          paid_at?: string | null
+          payment_method?: string | null
+          stripe_payment_id?: string | null
+          trial_ends_at?: string
+          trial_started_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
