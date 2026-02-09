@@ -33,15 +33,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const linkLicenseToUser = useCallback(async (userId: string, email: string | undefined) => {
     const deviceId = getDeviceId();
     try {
-      // Atualiza a licença existente com o user_id e inicia o trial
-      await supabase
+      // Primeiro, tenta atualizar licença existente vinculando o user_id
+      const { data: existingLicense } = await supabase
         .from('user_licenses')
-        .update({ 
-          email: email || null,
-          trial_started_at: new Date().toISOString(),
-          trial_ends_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-        })
-        .eq('device_id', deviceId);
+        .select('id, user_id')
+        .eq('device_id', deviceId)
+        .maybeSingle();
+
+      if (existingLicense) {
+        // Atualiza a licença existente com o user_id e reinicia o trial
+        await supabase
+          .from('user_licenses')
+          .update({ 
+            user_id: userId,
+            email: email || null,
+            trial_started_at: new Date().toISOString(),
+            trial_ends_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          })
+          .eq('id', existingLicense.id);
+      } else {
+        // Cria nova licença vinculada ao usuário
+        await supabase
+          .from('user_licenses')
+          .insert({ 
+            device_id: deviceId,
+            user_id: userId,
+            email: email || null
+          });
+      }
     } catch (error) {
       console.error('Erro ao vincular licença ao usuário:', error);
     }
