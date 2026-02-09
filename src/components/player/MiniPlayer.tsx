@@ -5,7 +5,8 @@
  * Permite controle básico e expande para o player em tela cheia.
  */
 
-import { motion } from 'framer-motion';
+import { forwardRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Play, Pause, SkipForward, ChevronUp, Music } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,37 @@ interface MiniPlayerProps {
   onNext: () => void;
   onExpand: () => void;
 }
+
+/** Componente do ícone animado de play/pause */
+const AnimatedPlayPauseIcon = forwardRef<HTMLDivElement, { isPlaying: boolean }>(
+  function AnimatedPlayPauseIcon({ isPlaying }, ref) {
+    return (
+      <div ref={ref}>
+        {isPlaying ? (
+          <Pause size={20} fill="currentColor" />
+        ) : (
+          <Play size={20} fill="currentColor" className="ml-0.5" />
+        )}
+      </div>
+    );
+  }
+);
+
+/** Componente das informações da faixa animadas */
+const AnimatedTrackInfo = forwardRef<HTMLDivElement, { track: Track }>(
+  function AnimatedTrackInfo({ track }, ref) {
+    return (
+      <div ref={ref}>
+        <p className="font-medium text-foreground truncate text-sm">
+          {track.title}
+        </p>
+        <p className="text-xs text-muted-foreground truncate">
+          {track.artist}
+        </p>
+      </div>
+    );
+  }
+);
 
 export function MiniPlayer({
   track,
@@ -73,12 +105,17 @@ export function MiniPlayer({
 
             {/* Track Info */}
             <div className="flex-1 min-w-0">
-              <p className="font-medium text-foreground truncate text-sm">
-                {track.title}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {track.artist}
-              </p>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={track.id}
+                  initial={{ y: 10, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -10, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <AnimatedTrackInfo track={track} />
+                </motion.div>
+              </AnimatePresence>
             </div>
 
             {/* Expand indicator */}
@@ -87,21 +124,19 @@ export function MiniPlayer({
 
           {/* Controls */}
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                onTogglePlay();
-              }}
-              className="w-11 h-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              {isPlaying ? (
-                <Pause size={20} fill="currentColor" />
-              ) : (
-                <Play size={20} fill="currentColor" className="ml-0.5" />
-              )}
-            </Button>
+            <motion.div whileTap={{ scale: 0.9 }}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onTogglePlay();
+                }}
+                className="w-11 h-11 rounded-full bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                <AnimatedPlayPauseIcon isPlaying={isPlaying} />
+              </Button>
+            </motion.div>
 
             <Button
               variant="ghost"
