@@ -14,12 +14,20 @@ import { Onboarding } from "@/components/welcome/Onboarding";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { PaymentScreen } from "@/components/license/PaymentScreen";
 import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import Privacy from "./pages/Privacy";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// Loading spinner component
+const LoadingScreen = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+  </div>
+);
 
 // Componente que verifica licença e bloqueia se necessário (admins são isentos)
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
@@ -39,8 +47,10 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
     checkAdmin();
   }, [user]);
 
-  // Enquanto carrega, mostra nada
-  if (isLoading || isAdmin === null) return null;
+  // Enquanto carrega, mostra loading
+  if (isLoading || isAdmin === null) {
+    return <LoadingScreen />;
+  }
 
   // Admins têm acesso total, sem restrição de licença
   if (isAdmin) {
@@ -59,7 +69,9 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
 const AuthGate = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return <LoadingScreen />;
+  }
 
   if (!user) {
     return <AuthScreen />;
