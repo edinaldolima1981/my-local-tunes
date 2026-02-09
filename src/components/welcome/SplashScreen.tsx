@@ -8,23 +8,32 @@ interface SplashScreenProps {
 
 export function SplashScreen({ onComplete }: SplashScreenProps) {
     const [isVisible, setIsVisible] = useState(true);
+    const [shouldRender, setShouldRender] = useState(true);
 
     useEffect(() => {
-        // Fade out after 2.5 seconds
         const timer = setTimeout(() => {
             setIsVisible(false);
         }, 2500);
 
-        // Call onComplete after fade out animation
         const completeTimer = setTimeout(() => {
+            setShouldRender(false);
             onComplete();
         }, 3000);
+
+        // Failsafe: force close after 5 seconds no matter what
+        const failsafe = setTimeout(() => {
+            setShouldRender(false);
+            onComplete();
+        }, 5000);
 
         return () => {
             clearTimeout(timer);
             clearTimeout(completeTimer);
+            clearTimeout(failsafe);
         };
     }, [onComplete]);
+
+    if (!shouldRender) return null;
 
     return (
         <motion.div
@@ -32,9 +41,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             animate={{ opacity: isVisible ? 1 : 0 }}
             transition={{ duration: 0.5 }}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-gradient-to-br from-background via-primary/5 to-accent/5"
+            style={{ pointerEvents: isVisible ? 'auto' : 'none' }}
         >
             <div className="flex flex-col items-center gap-6">
-                {/* Logo Animation */}
                 <motion.div
                     initial={{ scale: 0.5, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -46,18 +55,14 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     }}
                     className="relative"
                 >
-                    {/* Glow effect */}
                     <div className="absolute inset-0 blur-3xl opacity-30">
                         <div className="w-32 h-32 rounded-full bg-gradient-to-br from-primary to-accent" />
                     </div>
-
-                    {/* Icon */}
                     <div className="relative w-32 h-32 rounded-3xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-2xl">
                         <Music2 size={64} className="text-primary-foreground" strokeWidth={1.5} />
                     </div>
                 </motion.div>
 
-                {/* App Name */}
                 <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
@@ -72,7 +77,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     </p>
                 </motion.div>
 
-                {/* Loading indicator */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
