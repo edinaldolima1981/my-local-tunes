@@ -29,9 +29,65 @@ const LoadingScreen = () => (
     <Loader2 className="w-8 h-8 animate-spin text-primary" />
   </div>
 );
-// LicenseGate desativado temporariamente para garantir acesso
+// LicenseGate - bloqueia acesso quando trial expira e não pagou
 const LicenseGate = ({ children }: { children: React.ReactNode }) => {
-  return <>{children}</>;
+  const { status, isLoading: licenseLoading } = useLicense();
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminChecked, setAdminChecked] = useState(false);
+
+  // Verifica se é admin (bypass total)
+  useEffect(() => {
+    let cancelled = false;
+    const checkAdmin = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        setAdminChecked(true);
+        return;
+      }
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (!cancelled) setIsAdmin(!!data);
+      } catch {
+        if (!cancelled) setIsAdmin(false);
+      } finally {
+        if (!cancelled) setAdminChecked(true);
+      }
+    };
+
+    // Timeout de 3s para não travar
+    const timeout = setTimeout(() => {
+      if (!cancelled) {
+        setAdminChecked(true);
+      }
+    }, 3000);
+
+    checkAdmin();
+    return () => { cancelled = true; clearTimeout(timeout); };
+  }, [user]);
+
+  // Enquanto carrega, mostra loading
+  if (licenseLoading || !adminChecked) {
+    return <LoadingScreen />;
+  }
+
+  // Admin tem acesso total
+  if (isAdmin) {
+    return <>{children}</>;
+  }
+
+  // Se licença válida (trial ativo ou pago), libera
+  if (!status || status.isValid) {
+    return <>{children}</>;
+  }
+
+  // Trial expirado e não pagou - bloqueia
+  return <PaymentScreen />;
 };
 
 
