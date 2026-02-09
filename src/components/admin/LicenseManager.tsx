@@ -2,10 +2,10 @@
  * @fileoverview Painel de administração de licenças
  * 
  * Permite visualizar e gerenciar licenças dos usuários.
- * Acesso via rota /admin (protegida por senha simples).
+ * Acesso restrito a usuários com role 'admin'.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, 
@@ -16,13 +16,17 @@ import {
   RefreshCw,
   Shield,
   Copy,
-  Check
+  Check,
+  LogOut,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { UserLicense } from '@/services/licenseService';
+import { AuthScreen } from '@/components/auth/AuthScreen';
+import { AuthProvider, useAuth } from '@/hooks/useAuth';
 
 interface LicenseStats {
   total: number;
@@ -31,9 +35,9 @@ interface LicenseStats {
   expired: number;
 }
 
-export const LicenseManager = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState('');
+const AdminDashboard = () => {
+  const { user, signOut } = useAuth();
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [licenses, setLicenses] = useState<UserLicense[]>([]);
   const [filteredLicenses, setFilteredLicenses] = useState<UserLicense[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,17 +45,33 @@ export const LicenseManager = () => {
   const [stats, setStats] = useState<LicenseStats>({ total: 0, paid: 0, trial: 0, expired: 0 });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Senha de admin (em produção, usar algo mais seguro)
-  const ADMIN_PASSWORD = 'admin123'; // Altere para sua senha
-
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      setIsAuthenticated(true);
-      loadLicenses();
-    } else {
-      toast.error('Senha incorreta');
+  // Verifica se usuário é admin usando função do banco
+  const checkAdminRole = useCallback(async () => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
     }
-  };
+
+    try {
+      const { data, error } = await supabase
+        .rpc('has_role', { _user_id: user.id, _role: 'admin' });
+
+      if (error) {
+        console.error('Erro ao verificar role:', error);
+        setIsAdmin(false);
+        return;
+      }
+
+      setIsAdmin(data === true);
+    } catch (error) {
+      console.error('Erro ao verificar admin:', error);
+      setIsAdmin(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    checkAdminRole();
+  }, [checkAdminRole]);
 
   const loadLicenses = async () => {
     setIsLoading(true);
@@ -67,7 +87,6 @@ export const LicenseManager = () => {
       setLicenses(licenseList);
       setFilteredLicenses(licenseList);
 
-      // Calcular estatísticas
       const now = new Date();
       const statsData = licenseList.reduce((acc, license) => {
         acc.total++;
@@ -89,6 +108,12 @@ export const LicenseManager = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAdmin) {
+      loadLicenses();
+    }
+  }, [isAdmin]);
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
@@ -190,36 +215,42 @@ export const LicenseManager = () => {
     });
   };
 
-  // Login screen
-  if (!isAuthenticated) {
+  const handleLogout = async () => {
+    await signOut();
+    setIsAdmin(null);
+  };
+
+  // Loading state
+  if (isAdmin === null) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Não é admin
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-sm bg-card rounded-2xl border border-border p-6"
+          className="w-full max-w-sm bg-card rounded-2xl border border-border p-6 text-center"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 rounded-xl bg-primary/20">
-              <Shield className="text-primary" size={24} />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Admin</h1>
-              <p className="text-sm text-muted-foreground">Gerenciador de Licenças</p>
-            </div>
+          <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
+            <Shield className="w-8 h-8 text-destructive" />
           </div>
-
-          <Input
-            type="password"
-            placeholder="Senha de admin"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-            className="mb-4"
-          />
-
-          <Button onClick={handleLogin} className="w-full">
-            Entrar
+          <h1 className="text-xl font-bold mb-2">Acesso Negado</h1>
+          <p className="text-sm text-muted-foreground mb-4">
+            Você não tem permissão para acessar o painel de administração.
+          </p>
+          <p className="text-xs text-muted-foreground mb-4">
+            Logado como: {user?.email}
+          </p>
+          <Button variant="outline" onClick={handleLogout} className="w-full">
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
           </Button>
         </motion.div>
       </div>
@@ -234,16 +265,25 @@ export const LicenseManager = () => {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Gerenciador de Licenças</h1>
-            <p className="text-sm text-muted-foreground">Gerencie os usuários do app</p>
+            <p className="text-sm text-muted-foreground">{user?.email}</p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={loadLicenses}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`${isLoading ? 'animate-spin' : ''}`} size={18} />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={loadLicenses}
+              disabled={isLoading}
+            >
+              <RefreshCw className={`${isLoading ? 'animate-spin' : ''}`} size={18} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -380,5 +420,32 @@ export const LicenseManager = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+// Wrapper com AuthProvider e gate de login
+const AdminContent = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return <AdminDashboard />;
+};
+
+export const LicenseManager = () => {
+  return (
+    <AuthProvider>
+      <AdminContent />
+    </AuthProvider>
   );
 };
