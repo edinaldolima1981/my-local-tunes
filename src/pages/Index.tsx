@@ -22,6 +22,7 @@ import { useAudioPlayer } from '@/hooks/useAudioPlayer';
 import { useMusicLibrary } from '@/hooks/useMusicLibrary';
 import { useLibraryOrganization, Artist, Album } from '@/hooks/useLibraryOrganization';
 import { usePlaylists } from '@/hooks/usePlaylists';
+import { useFavorites } from '@/hooks/useFavorites';
 
 // Componentes do Player
 import { VolumeControl } from '@/components/player/VolumeControl';
@@ -57,6 +58,7 @@ const Index = () => {
   const { tracks, customAlbums, isScanning, scanProgress, scanStatus, error, rescan } = useMusicLibrary();
   const { artists, albums, searchTracks } = useLibraryOrganization(tracks, customAlbums);
   const { resolvePlaylists } = usePlaylists();
+  const { favoritesCount } = useFavorites();
 
   // Resolve playlists when library loads
   useEffect(() => {
@@ -100,6 +102,26 @@ const Index = () => {
   const handleClearPending = () => {
     setPendingArtist(null);
     setPendingAlbum(null);
+  };
+
+  const handleQuickNavigate = (destination: 'favorites' | 'recent' | 'shuffle' | 'playlists') => {
+    // Navigate to library with specific tab/action
+    if (destination === 'shuffle' && tracks.length > 0) {
+      // Shuffle and play
+      const shuffled = [...tracks].sort(() => Math.random() - 0.5);
+      player.loadQueue(shuffled, 0);
+    } else {
+      // Navigate to library tab
+      setMainTab('library');
+    }
+  };
+
+  const handleSeeAllArtists = () => {
+    setMainTab('library');
+  };
+
+  const handleSeeAllAlbums = () => {
+    setMainTab('library');
   };
 
   const progress = player.duration > 0 ? player.currentTime / player.duration : 0;
@@ -200,8 +222,12 @@ const Index = () => {
                   albums={albums}
                   tracksCount={tracks.length}
                   isPlaying={player.isPlaying}
+                  favoritesCount={favoritesCount}
                   onArtistSelect={handleArtistSelect}
                   onAlbumSelect={handleAlbumSelect}
+                  onQuickNavigate={handleQuickNavigate}
+                  onSeeAllArtists={handleSeeAllArtists}
+                  onSeeAllAlbums={handleSeeAllAlbums}
                 />
               </motion.div>
             ) : (
