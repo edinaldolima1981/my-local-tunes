@@ -298,7 +298,7 @@ const Index = () => {
         </AnimatePresence>
 
         {/* Tab Bar */}
-        <div className="bg-background/95 backdrop-blur-lg border-t border-border/50 safe-area-inset-bottom">
+        <div className="bg-background/95 backdrop-blur-lg border-t border-border/50 safe-area-inset-bottom pb-2">
           <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
             <button
               onClick={() => setMainTab('home')}
