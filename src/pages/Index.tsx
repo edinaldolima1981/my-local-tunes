@@ -133,7 +133,7 @@ const Index = () => {
       {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-surface opacity-50 pointer-events-none" />
       
-      <div className="relative z-10 pb-32">
+      <div className="relative z-10 pb-40">
         <div className="container max-w-lg mx-auto px-4 py-6 safe-area-inset">
           {/* Header Controls */}
           <motion.div 
@@ -297,8 +297,8 @@ const Index = () => {
           )}
         </AnimatePresence>
 
-        {/* Tab Bar */}
-        <div className="bg-background/95 backdrop-blur-lg border-t border-border/50 safe-area-inset-bottom pb-2">
+        {/* Tab Bar - extra padding for mobile browser toolbar */}
+        <div className="bg-background/95 backdrop-blur-lg border-t border-border/50" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
           <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
             <button
               onClick={() => setMainTab('home')}
