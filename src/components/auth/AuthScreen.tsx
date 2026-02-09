@@ -20,29 +20,41 @@ export const AuthScreen = () => {
   const [password, setPassword] = useState('');
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
-    const { error } = await signInWithGoogle();
-    if (error) {
-      toast({
-        title: 'Erro ao entrar com Google',
-        description: error.message,
-        variant: 'destructive',
-      });
+    try {
+      setIsLoading(true);
+      const { error } = await signInWithGoogle();
+      if (error) {
+        toast({
+          title: 'Erro ao entrar com Google',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('[Auth] Google login error:', err);
+      toast({ title: 'Erro inesperado', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleAppleLogin = async () => {
-    setIsLoading(true);
-    const { error } = await signInWithApple();
-    if (error) {
-      toast({
-        title: 'Erro ao entrar com Apple',
-        description: error.message,
-        variant: 'destructive',
-      });
+    try {
+      setIsLoading(true);
+      const { error } = await signInWithApple();
+      if (error) {
+        toast({
+          title: 'Erro ao entrar com Apple',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('[Auth] Apple login error:', err);
+      toast({ title: 'Erro inesperado', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -55,16 +67,22 @@ export const AuthScreen = () => {
       });
       return;
     }
-    setIsLoading(true);
-    const { error } = await signInWithEmail(email, password);
-    if (error) {
-      toast({
-        title: 'Erro ao entrar',
-        description: error.message,
-        variant: 'destructive',
-      });
+    try {
+      setIsLoading(true);
+      const { error } = await signInWithEmail(email, password);
+      if (error) {
+        toast({
+          title: 'Erro ao entrar',
+          description: error.message,
+          variant: 'destructive',
+        });
+      }
+    } catch (err) {
+      console.error('[Auth] Email login error:', err);
+      toast({ title: 'Erro inesperado', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const handleEmailSignup = async (e: React.FormEvent) => {
@@ -85,25 +103,31 @@ export const AuthScreen = () => {
       });
       return;
     }
-    setIsLoading(true);
-    const { error } = await signUpWithEmail(email, password);
-    if (error) {
-      toast({
-        title: 'Erro ao criar conta',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Conta criada!',
-        description: 'Você já está logado. Aproveite seu trial de 24h!',
-      });
+    try {
+      setIsLoading(true);
+      const { error } = await signUpWithEmail(email, password);
+      if (error) {
+        toast({
+          title: 'Erro ao criar conta',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        toast({
+          title: 'Conta criada!',
+          description: 'Você já está logado. Aproveite seu trial de 24h!',
+        });
+      }
+    } catch (err) {
+      console.error('[Auth] Signup error:', err);
+      toast({ title: 'Erro inesperado', description: 'Tente novamente.', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-primary/20">
         <CardHeader className="text-center space-y-4">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
