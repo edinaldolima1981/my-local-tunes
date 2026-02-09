@@ -36,15 +36,43 @@ const LicenseGate = ({ children }: { children: React.ReactNode }) => {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
+    let alive = true;
+    setIsAdmin(null);
+
+    const timeout = window.setTimeout(() => {
+      if (!alive) return;
+      console.warn('[license] timeout ao verificar admin; assumindo não-admin');
+      setIsAdmin(false);
+    }, 5000);
+
     const checkAdmin = async () => {
-      if (!user) {
+      try {
+        if (!user) {
+          setIsAdmin(false);
+          return;
+        }
+
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin',
+        });
+
+        if (error) throw error;
+        setIsAdmin(data === true);
+      } catch (error) {
+        console.error('[license] erro ao verificar admin:', error);
         setIsAdmin(false);
-        return;
+      } finally {
+        window.clearTimeout(timeout);
       }
-      const { data } = await supabase.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-      setIsAdmin(data === true);
     };
+
     checkAdmin();
+
+    return () => {
+      alive = false;
+      window.clearTimeout(timeout);
+    };
   }, [user]);
 
   // Enquanto carrega, mostra loading
