@@ -35,7 +35,7 @@ import { HomeScreen } from '@/components/home/HomeScreen';
 import { LibraryScreen } from '@/components/library/LibraryScreen';
 import { DiscoverScreen } from '@/components/discover/DiscoverScreen';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
-import { TrialBanner } from '@/components/license/TrialBanner';
+
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Equalizer } from '@/components/player/Equalizer';
@@ -51,7 +51,7 @@ const Index = () => {
   const [showVolume, setShowVolume] = useState(false);
   const [showFullscreen, setShowFullscreen] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
-  const [showPayment, setShowPayment] = useState(false);
+  
   
   // Navigation state (for going from Home to Library detail)
   const [pendingArtist, setPendingArtist] = useState<Artist | null>(null);
@@ -177,8 +177,6 @@ const Index = () => {
           </AnimatePresence>
 
 
-          {/* Trial Banner */}
-          <TrialBanner onUpgrade={() => setShowPayment(true)} />
 
           {/* Error Alert */}
           <AnimatePresence>
