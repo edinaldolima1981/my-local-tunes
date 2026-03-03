@@ -14,7 +14,8 @@ import {
   RefreshCw, 
   Shield,
   Home,
-  Library
+  Library,
+  Compass
 } from 'lucide-react';
 
 // Hooks
@@ -32,6 +33,7 @@ import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 // Componentes
 import { HomeScreen } from '@/components/home/HomeScreen';
 import { LibraryScreen } from '@/components/library/LibraryScreen';
+import { DiscoverScreen } from '@/components/discover/DiscoverScreen';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 import { TrialBanner } from '@/components/license/TrialBanner';
 import { Button } from '@/components/ui/button';
@@ -41,7 +43,7 @@ import { Equalizer } from '@/components/player/Equalizer';
 // Types
 import { Track } from '@/types/music';
 
-type MainTab = 'home' | 'library';
+type MainTab = 'home' | 'library' | 'discover';
 
 const Index = () => {
   // UI State
@@ -249,6 +251,16 @@ const Index = () => {
                   onToggleFavorite={() => player.currentTrack && toggleFavorite(player.currentTrack.id)}
                 />
               </motion.div>
+            ) : mainTab === 'discover' ? (
+              <motion.div
+                key="discover"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 50 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DiscoverScreen />
+              </motion.div>
             ) : (
               <motion.div
                 key="library"
@@ -302,7 +314,7 @@ const Index = () => {
           <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
             <button
               onClick={() => setMainTab('home')}
-              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
                 mainTab === 'home'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -312,8 +324,19 @@ const Index = () => {
               <span className="text-[10px] font-medium">Home</span>
             </button>
             <button
+              onClick={() => setMainTab('discover')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+                mainTab === 'discover'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Compass size={22} />
+              <span className="text-[10px] font-medium">Descobrir</span>
+            </button>
+            <button
               onClick={() => setMainTab('library')}
-              className={`flex flex-col items-center gap-1 px-6 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
                 mainTab === 'library'
                   ? 'text-primary'
                   : 'text-muted-foreground'
