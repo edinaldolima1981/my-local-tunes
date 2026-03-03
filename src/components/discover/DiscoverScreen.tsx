@@ -49,7 +49,7 @@ export function DiscoverScreen() {
         <div>
           <h1 className="text-2xl font-bold text-gradient-primary">Descobrir</h1>
           <p className="text-xs text-muted-foreground">
-            Encontre e baixe músicas grátis
+            Encontre e baixe músicas
           </p>
         </div>
       </motion.header>
