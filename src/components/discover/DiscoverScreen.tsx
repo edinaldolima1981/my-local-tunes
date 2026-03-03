@@ -89,6 +89,40 @@ export function DiscoverScreen() {
         </div>
       </motion.div>
 
+      {/* Palco MP3 Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="rounded-2xl overflow-hidden border border-border/50 bg-gradient-to-br from-orange-500/10 to-yellow-500/10"
+      >
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center">
+              <Disc3 className="text-orange-400" size={24} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">Palco MP3</h2>
+              <p className="text-xs text-muted-foreground">palcomp3.com.br</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Plataforma com <strong className="text-foreground">músicas autorizadas pelos artistas</strong> — Downloads gratuitos e legais de todos os gêneros brasileiros.
+          </p>
+
+          <Button
+            onClick={() => window.open('https://palcomp3.com.br/', '_blank', 'noopener,noreferrer')}
+            className="w-full gap-2 bg-orange-600 hover:bg-orange-700 text-white"
+            size="lg"
+          >
+            <ExternalLink size={18} />
+            Abrir Palco MP3
+            <ArrowRight size={16} />
+          </Button>
+        </div>
+      </motion.div>
+
       {/* Como funciona */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
