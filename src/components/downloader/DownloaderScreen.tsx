@@ -167,7 +167,20 @@ export const DownloaderScreen = () => {
           <input
             type="url"
             value={link}
-            onChange={(e) => { setLink(e.target.value); setError(''); setPlatform(null); }}
+            onChange={(e) => {
+              const val = e.target.value;
+              setLink(val);
+              setError('');
+              if (val.trim() && isValidUrl(val.trim())) {
+                const detected = detectPlatform(val.trim());
+                setPlatform(detected);
+                if (detected === 'unknown') {
+                  setError('Plataforma não reconhecida. Tente YouTube, TikTok, Instagram ou Facebook.');
+                }
+              } else {
+                setPlatform(null);
+              }
+            }}
             placeholder="Cole aqui o link do vídeo"
             className="w-full h-12 pl-10 pr-10 rounded-xl border border-border bg-secondary/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm"
           />
