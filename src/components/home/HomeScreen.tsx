@@ -67,6 +67,7 @@ export function HomeScreen({
   isFavorite,
   onToggleFavorite,
   onSeeAllAlbums,
+  onGoToDownloader,
 }: HomeScreenProps) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const coverUrl = currentTrack?.coverUrl || defaultCover;
