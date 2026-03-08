@@ -346,7 +346,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setMainTab('library')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'library'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -354,6 +354,17 @@ const Index = () => {
             >
               <Library size={22} />
               <span className="text-[10px] font-medium">Biblioteca</span>
+            </button>
+            <button
+              onClick={() => setMainTab('downloader')}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                mainTab === 'downloader'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Download size={22} />
+              <span className="text-[10px] font-medium">Downloader</span>
             </button>
           </div>
         </div>
