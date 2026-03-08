@@ -40,6 +40,7 @@ interface HomeScreenProps {
   onSeek: (time: number) => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onGoToDownloader?: () => void;
 }
 
 function formatTime(seconds: number): string {
