@@ -99,25 +99,38 @@ export const DownloaderScreen = () => {
     }
   };
 
-  const handleDetect = (url?: string) => {
-    const target = url || link;
+  const handleDetect = (url?: string, autoOpen = false) => {
+    const target = (url || link).trim();
     setError('');
 
-    if (!target.trim()) {
+    if (!target) {
       setError('Cole um link para continuar');
       return;
     }
 
-    if (!isValidUrl(target.trim())) {
+    if (!isValidUrl(target)) {
       setError('Link inválido. Verifique e tente novamente.');
       return;
     }
 
-    const detected = detectPlatform(target.trim());
+    const detected = detectPlatform(target);
     setPlatform(detected);
 
     if (detected === 'unknown') {
       setError('Plataforma não reconhecida. Tente YouTube, TikTok, Instagram ou Facebook.');
+      return;
+    }
+
+    // Auto-open download when clicking "Buscar Vídeo"
+    if (autoOpen || !url) {
+      const ssUrl = generateSSUrl(target, detected);
+      if (ssUrl) {
+        if (isDuplicate(target)) {
+          toast.warning('Este link já foi baixado anteriormente');
+        }
+        addRecord({ url: target, title: `${platformLabels[detected]} - Download`, platform: detected, format: 'auto', method: 'SS' });
+        window.open(ssUrl, '_blank');
+      }
     }
   };
 
