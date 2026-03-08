@@ -45,7 +45,7 @@ import { Equalizer } from '@/components/player/Equalizer';
 // Types
 import { Track } from '@/types/music';
 
-type MainTab = 'home' | 'library' | 'discover';
+type MainTab = 'home' | 'library' | 'discover' | 'downloader';
 
 const Index = () => {
   // UI State
