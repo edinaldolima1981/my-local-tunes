@@ -8,7 +8,8 @@ import {
   Repeat,
   Heart,
   Library,
-  Music
+  Music,
+  Download
 } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Artist, Album } from '@/hooks/useLibraryOrganization';
