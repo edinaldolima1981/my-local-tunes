@@ -324,7 +324,7 @@ const Index = () => {
           <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
             <button
               onClick={() => setMainTab('home')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'home'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -335,7 +335,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setMainTab('discover')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'discover'
                   ? 'text-primary'
                   : 'text-muted-foreground'
