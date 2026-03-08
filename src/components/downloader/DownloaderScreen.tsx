@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Download,
@@ -17,9 +17,10 @@ import {
   History,
   Wrench,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useDownloadHistory, DownloadRecord } from '@/hooks/useDownloadHistory';
+import { useDownloadHistory } from '@/hooks/useDownloadHistory';
 import { toast } from 'sonner';
 
 type Platform = 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'unknown';
@@ -41,28 +42,20 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
-const generateSSUrl = (url: string, platform: Platform): string | null => {
-  if (platform === 'youtube') {
-    return url.replace(/youtube\.com/, 'ssyoutube.com').replace(/youtu\.be/, 'ssyoutube.com/watch?v=');
-  }
-  if (platform === 'tiktok') {
-    return url.replace(/tiktok\.com/, 'sstiktok.com');
-  }
-  if (platform === 'instagram') {
-    return url.replace(/instagram\.com/, 'ssinstagram.com');
-  }
-  if (platform === 'facebook') {
-    return url.replace(/facebook\.com/, 'ssfacebook.com');
-  }
-  return null;
-};
+// Services that actually work - generates direct clickable links
+const getDownloadServices = (url: string, platform: Platform) => {
+  const encoded = encodeURIComponent(url);
+  
+  const services = [
+    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}`, recommended: true },
+    { name: 'Y2Mate', url: `https://www.y2mate.com/youtube/${encoded}`, platforms: ['youtube'] },
+    { name: 'KeepVid', url: `https://keepvid.to/?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+    { name: 'SnapSave', url: `https://snapsave.app/pt?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+    { name: 'SaveTube', url: `https://savetube.me/pt/1/?url=${encoded}`, platforms: ['youtube'] },
+  ];
 
-const externalServices = [
-  { name: 'KeepVid', baseUrl: 'https://keepvid.to/?url=' },
-  { name: 'SaveTube', baseUrl: 'https://savetube.me/pt/1/?url=' },
-  { name: 'Zeemo', baseUrl: 'https://zeemo.ai/tools/youtube-downloader?url=' },
-  { name: 'AceThinker', baseUrl: 'https://www.acethinker.com/downloader#url=' },
-];
+  return services.filter(s => !s.platforms || s.platforms.includes(platform));
+};
 
 const platformIcons: Record<Platform, React.ReactNode> = {
   youtube: <Youtube size={18} />,
@@ -86,22 +79,41 @@ export const DownloaderScreen = () => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState('');
+  const [showServices, setShowServices] = useState(false);
+  const linkRef = useRef<HTMLAnchorElement>(null);
 
   const { history, addRecord, removeRecord, clearHistory, isDuplicate } = useDownloadHistory();
+
+  const openUrl = useCallback((url: string, title: string, method: string, plt: Platform) => {
+    if (isDuplicate(link.trim())) {
+      toast.warning('Este link já foi baixado anteriormente');
+    }
+    addRecord({ url: link.trim(), title, platform: plt, format: 'auto', method });
+    
+    // Use a real anchor element to avoid popup blockers
+    const a = document.createElement('a');
+    a.href = url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [link, isDuplicate, addRecord]);
 
   const handlePaste = async () => {
     try {
       const text = await navigator.clipboard.readText();
       setLink(text);
-      handleDetect(text);
+      processLink(text);
     } catch {
       toast.error('Não foi possível acessar a área de transferência');
     }
   };
 
-  const handleDetect = (url?: string, autoOpen = false) => {
-    const target = (url || link).trim();
+  const processLink = (url: string) => {
+    const target = url.trim();
     setError('');
+    setShowServices(false);
 
     if (!target) {
       setError('Cole um link para continuar');
@@ -121,49 +133,25 @@ export const DownloaderScreen = () => {
       return;
     }
 
-    // Auto-open download when clicking "Buscar Vídeo"
-    if (autoOpen || !url) {
-      const ssUrl = generateSSUrl(target, detected);
-      if (ssUrl) {
-        if (isDuplicate(target)) {
-          toast.warning('Este link já foi baixado anteriormente');
-        }
-        addRecord({ url: target, title: `${platformLabels[detected]} - Download`, platform: detected, format: 'auto', method: 'SS' });
-        window.open(ssUrl, '_blank');
-      }
-    }
+    // Show download services
+    setShowServices(true);
+    toast.success(`${platformLabels[detected]} detectado! Escolha um serviço abaixo.`);
   };
 
-  const handleSSMethod = () => {
-    if (!link || !platform) return;
-
-    if (isDuplicate(link)) {
-      toast.warning('Este link já foi baixado anteriormente');
-    }
-
-    const ssUrl = generateSSUrl(link.trim(), platform);
-    if (ssUrl) {
-      addRecord({ url: link.trim(), title: `${platformLabels[platform]} - Download`, platform, format: 'auto', method: 'SS' });
-      window.open(ssUrl, '_blank');
-    } else {
-      toast.error('Método SS não disponível para esta plataforma');
-    }
-  };
-
-  const handleExternalService = (service: typeof externalServices[0]) => {
-    if (!link.trim()) {
-      setError('Cole um link primeiro');
-      return;
-    }
-    addRecord({ url: link.trim(), title: `Via ${service.name}`, platform: platform || 'unknown', format: 'auto', method: service.name });
-    window.open(`${service.baseUrl}${encodeURIComponent(link.trim())}`, '_blank');
+  const handleSearch = () => {
+    processLink(link);
   };
 
   const handleClear = () => {
     setLink('');
     setPlatform(null);
     setError('');
+    setShowServices(false);
   };
+
+  const downloadServices = platform && platform !== 'unknown' 
+    ? getDownloadServices(link.trim(), platform) 
+    : [];
 
   return (
     <div className="space-y-6">
@@ -184,6 +172,7 @@ export const DownloaderScreen = () => {
               const val = e.target.value;
               setLink(val);
               setError('');
+              setShowServices(false);
               if (val.trim() && isValidUrl(val.trim())) {
                 const detected = detectPlatform(val.trim());
                 setPlatform(detected);
@@ -204,12 +193,27 @@ export const DownloaderScreen = () => {
           )}
         </div>
 
+        {/* Platform badge */}
+        <AnimatePresence>
+          {platform && platform !== 'unknown' && (
+            <motion.div
+              initial={{ opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 text-primary text-sm font-medium"
+            >
+              {platformIcons[platform]}
+              Plataforma detectada: {platformLabels[platform]}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div className="flex gap-2">
           <Button onClick={handlePaste} variant="secondary" className="flex-1 gap-2 rounded-xl">
             <ClipboardPaste size={16} />
             Colar
           </Button>
-          <Button onClick={() => handleDetect()} className="flex-1 gap-2 rounded-xl">
+          <Button onClick={handleSearch} className="flex-1 gap-2 rounded-xl">
             <Search size={16} />
             Buscar Vídeo
           </Button>
@@ -229,26 +233,11 @@ export const DownloaderScreen = () => {
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* Platform Detected */}
-        <AnimatePresence>
-          {platform && platform !== 'unknown' && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="flex items-center gap-2 p-3 rounded-xl bg-primary/10 text-primary text-sm font-medium"
-            >
-              {platformIcons[platform]}
-              Plataforma detectada: {platformLabels[platform]}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
-      {/* SS Method - Quick Download */}
+      {/* Download Services - appears after clicking "Buscar Vídeo" */}
       <AnimatePresence>
-        {platform && platform !== 'unknown' && (
+        {showServices && downloadServices.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -257,39 +246,61 @@ export const DownloaderScreen = () => {
           >
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
               <Download size={16} />
-              Download Rápido
+              Escolha um serviço para baixar
             </h2>
-            <Button onClick={handleSSMethod} className="w-full gap-2 rounded-xl h-12 text-base">
-              <Download size={18} />
-              Baixar via SaveFrom (Método SS)
-            </Button>
+
+            <div className="space-y-2">
+              {downloadServices.map((service) => (
+                <a
+                  key={service.name}
+                  href={service.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => {
+                    if (isDuplicate(link.trim())) {
+                      toast.warning('Este link já foi baixado anteriormente');
+                    }
+                    addRecord({
+                      url: link.trim(),
+                      title: `${platformLabels[platform!]} - via ${service.name}`,
+                      platform: platform!,
+                      format: 'auto',
+                      method: service.name,
+                    });
+                  }}
+                  className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
+                    service.recommended
+                      ? 'bg-primary/10 border-primary/30 hover:bg-primary/20'
+                      : 'bg-secondary/30 border-border/50 hover:bg-secondary/50'
+                  }`}
+                >
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                    service.recommended ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                  }`}>
+                    <Download size={18} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                      {service.name}
+                      {service.recommended && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
+                          Recomendado
+                        </span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">Clique para abrir e baixar</p>
+                  </div>
+                  <ExternalLink size={16} className="text-muted-foreground shrink-0" />
+                </a>
+              ))}
+            </div>
+
             <p className="text-xs text-muted-foreground text-center">
-              Abre o serviço SaveFrom.net com opções de MP4, WebM e MP3
+              Você será redirecionado para o serviço externo com opções de formato e qualidade
             </p>
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* External Services */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <ExternalLink size={16} />
-          Baixar via serviço externo
-        </h2>
-        <div className="grid grid-cols-2 gap-2">
-          {externalServices.map((service) => (
-            <Button
-              key={service.name}
-              variant="outline"
-              onClick={() => handleExternalService(service)}
-              className="rounded-xl h-11 text-sm gap-2"
-            >
-              <Globe size={14} />
-              {service.name}
-            </Button>
-          ))}
-        </div>
-      </div>
 
       {/* Advanced Mode */}
       <div className="space-y-3">
@@ -316,7 +327,6 @@ export const DownloaderScreen = () => {
                   Requer um servidor backend configurado.
                 </p>
 
-                {/* Video Formats */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Video size={14} />
@@ -331,7 +341,6 @@ export const DownloaderScreen = () => {
                   </div>
                 </div>
 
-                {/* Audio Formats */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Music size={14} />
@@ -410,6 +419,9 @@ export const DownloaderScreen = () => {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Hidden anchor for programmatic navigation */}
+      <a ref={linkRef} className="hidden" target="_blank" rel="noopener noreferrer" />
     </div>
   );
 };
