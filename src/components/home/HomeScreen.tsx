@@ -302,6 +302,16 @@ export function HomeScreen({
           <span className="text-[10px]">Biblioteca</span>
         </motion.button>
 
+        {/* Downloader */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={onGoToDownloader}
+          className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Download size={22} />
+          <span className="text-[10px]">Downloader</span>
+        </motion.button>
+
         {/* Track count */}
         <div className="flex flex-col items-center gap-1 text-muted-foreground">
           <Music size={22} />
