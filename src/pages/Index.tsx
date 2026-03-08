@@ -249,6 +249,7 @@ const Index = () => {
                   onSeek={player.seek}
                   isFavorite={player.currentTrack ? isFavorite(player.currentTrack.id) : false}
                   onToggleFavorite={() => player.currentTrack && toggleFavorite(player.currentTrack.id)}
+                  onGoToDownloader={() => setMainTab('downloader')}
                 />
               </motion.div>
             ) : mainTab === 'discover' ? (

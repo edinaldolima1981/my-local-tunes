@@ -8,7 +8,8 @@ import {
   Repeat,
   Heart,
   Library,
-  Music
+  Music,
+  Download
 } from 'lucide-react';
 import { Track } from '@/types/music';
 import { Artist, Album } from '@/hooks/useLibraryOrganization';
@@ -39,6 +40,7 @@ interface HomeScreenProps {
   onSeek: (time: number) => void;
   isFavorite: boolean;
   onToggleFavorite: () => void;
+  onGoToDownloader?: () => void;
 }
 
 function formatTime(seconds: number): string {
@@ -65,6 +67,7 @@ export function HomeScreen({
   isFavorite,
   onToggleFavorite,
   onSeeAllAlbums,
+  onGoToDownloader,
 }: HomeScreenProps) {
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
   const coverUrl = currentTrack?.coverUrl || defaultCover;
@@ -297,6 +300,16 @@ export function HomeScreen({
         >
           <Library size={22} />
           <span className="text-[10px]">Biblioteca</span>
+        </motion.button>
+
+        {/* Downloader */}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={onGoToDownloader}
+          className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary transition-colors"
+        >
+          <Download size={22} />
+          <span className="text-[10px]">Downloader</span>
         </motion.button>
 
         {/* Track count */}
