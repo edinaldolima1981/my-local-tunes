@@ -35,6 +35,7 @@ import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 import { HomeScreen } from '@/components/home/HomeScreen';
 import { LibraryScreen } from '@/components/library/LibraryScreen';
 import { DiscoverScreen } from '@/components/discover/DiscoverScreen';
+import { DownloaderScreen } from '@/components/downloader/DownloaderScreen';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 
 import { Button } from '@/components/ui/button';
