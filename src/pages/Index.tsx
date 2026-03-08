@@ -15,7 +15,8 @@ import {
   Shield,
   Home,
   Library,
-  Compass
+  Compass,
+  Download
 } from 'lucide-react';
 
 // Hooks
@@ -34,6 +35,7 @@ import { FullscreenPlayer } from '@/components/player/FullscreenPlayer';
 import { HomeScreen } from '@/components/home/HomeScreen';
 import { LibraryScreen } from '@/components/library/LibraryScreen';
 import { DiscoverScreen } from '@/components/discover/DiscoverScreen';
+import { DownloaderScreen } from '@/components/downloader/DownloaderScreen';
 import { PrivacyInfo } from '@/components/PrivacyInfo';
 
 import { Button } from '@/components/ui/button';
@@ -43,7 +45,7 @@ import { Equalizer } from '@/components/player/Equalizer';
 // Types
 import { Track } from '@/types/music';
 
-type MainTab = 'home' | 'library' | 'discover';
+type MainTab = 'home' | 'library' | 'discover' | 'downloader';
 
 const Index = () => {
   // UI State
@@ -259,6 +261,16 @@ const Index = () => {
               >
                 <DiscoverScreen />
               </motion.div>
+            ) : mainTab === 'downloader' ? (
+              <motion.div
+                key="downloader"
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 50 }}
+                transition={{ duration: 0.2 }}
+              >
+                <DownloaderScreen />
+              </motion.div>
             ) : (
               <motion.div
                 key="library"
@@ -312,7 +324,7 @@ const Index = () => {
           <div className="container max-w-lg mx-auto flex items-center justify-around py-2">
             <button
               onClick={() => setMainTab('home')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'home'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -323,7 +335,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setMainTab('discover')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'discover'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -334,7 +346,7 @@ const Index = () => {
             </button>
             <button
               onClick={() => setMainTab('library')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
                 mainTab === 'library'
                   ? 'text-primary'
                   : 'text-muted-foreground'
@@ -342,6 +354,17 @@ const Index = () => {
             >
               <Library size={22} />
               <span className="text-[10px] font-medium">Biblioteca</span>
+            </button>
+            <button
+              onClick={() => setMainTab('downloader')}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all ${
+                mainTab === 'downloader'
+                  ? 'text-primary'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              <Download size={22} />
+              <span className="text-[10px] font-medium">Downloader</span>
             </button>
           </div>
         </div>
