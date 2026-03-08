@@ -15,7 +15,8 @@ import {
   Shield,
   Home,
   Library,
-  Compass
+  Compass,
+  Download
 } from 'lucide-react';
 
 // Hooks
