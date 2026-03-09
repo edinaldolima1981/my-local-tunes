@@ -267,11 +267,29 @@ export const DownloaderScreen = () => {
             <ClipboardPaste size={16} />
             Colar
           </Button>
-          <Button onClick={handleSearch} className="flex-1 gap-2 rounded-xl">
-            <Search size={16} />
-            Buscar Vídeo
+          <Button onClick={handleSearch} disabled={isLoading} className="flex-1 gap-2 rounded-xl">
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            {isLoading ? 'Buscando...' : 'Buscar Vídeo'}
           </Button>
         </div>
+
+        {/* Direct Download Button */}
+        <AnimatePresence>
+          {downloadUrl && (
+            <motion.a
+              href={downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex items-center justify-center gap-3 p-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              <Download size={20} />
+              Baixar Agora
+            </motion.a>
+          )}
+        </AnimatePresence>
 
         {/* Error */}
         <AnimatePresence>
