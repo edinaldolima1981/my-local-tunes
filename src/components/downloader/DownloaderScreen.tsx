@@ -238,12 +238,14 @@ export const DownloaderScreen = () => {
             type="url"
             value={link}
             onChange={(e) => {
-              const val = e.target.value;
+              const raw = e.target.value;
+              const val = cleanUrl(raw.trim());
               setLink(val);
               setError('');
               setShowServices(false);
-              if (val.trim() && isValidUrl(val.trim())) {
-                const detected = detectPlatform(val.trim());
+              setDownloadUrl(null);
+              if (val && isValidUrl(val)) {
+                const detected = detectPlatform(val);
                 setPlatform(detected);
                 if (detected === 'unknown') {
                   setError('Plataforma não reconhecida. Tente YouTube, TikTok, Instagram ou Facebook.');
