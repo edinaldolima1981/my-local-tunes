@@ -53,15 +53,16 @@ const getDownloadServices = (url: string, platform: Platform) => {
   const videoId = getYouTubeId(url);
   
   const services = [
-    // Most reliable YouTube downloaders in 2026
+    // Cobalt auto-processa o link direto - melhor opção
+    { name: 'Cobalt (Auto)', url: `https://cobalt.tools/?url=${encoded}`, recommended: true, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] as string[] },
+    // SaveFrom com hash auto-preenche e processa
+    { name: 'SaveFrom', url: `https://en.savefrom.net/#url=${encoded}`, recommended: false },
+    // Y2Mate abre direto na página do vídeo
     ...(videoId ? [
-      { name: 'Y2Mate', url: `https://www.y2mate.com/download-youtube/${videoId}`, recommended: true, platforms: ['youtube'] as string[] },
-      { name: 'SaveTube', url: `https://savetube.me/pt/youtube-video-downloader?url=${encoded}`, recommended: false, platforms: ['youtube'] as string[] },
-      { name: 'Cobalt (Melhor qualidade)', url: `https://cobalt.tools/?url=${encoded}`, recommended: false, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] as string[] },
+      { name: 'Y2Mate', url: `https://www.y2mate.com/download-youtube/${videoId}`, recommended: false, platforms: ['youtube'] as string[] },
     ] : []),
-    { name: 'You2Download', url: `https://you2downloader.com/?url=${encoded}`, platforms: ['youtube'] },
+    // SnapSave auto-processa
     { name: 'SnapSave', url: `https://snapsave.app/pt?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
-    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}` },
   ];
 
   return services.filter(s => !s.platforms || s.platforms.includes(platform));
