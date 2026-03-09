@@ -201,6 +201,8 @@ export const DownloaderScreen = () => {
     setPlatform(null);
     setError('');
     setShowServices(false);
+    setDownloadUrl(null);
+    setIsLoading(false);
   };
 
   const downloadServices = platform && platform !== 'unknown' 
