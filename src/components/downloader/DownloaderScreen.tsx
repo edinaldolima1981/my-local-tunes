@@ -42,16 +42,33 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
-// Services that actually work - generates direct clickable links
+// Generate SS-method URL (prepend "ss" to youtube.com)
+const generateSSUrl = (url: string): string | null => {
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtube.com')) {
+      return url.replace('youtube.com', 'ssyoutube.com');
+    }
+    if (u.hostname.includes('youtu.be')) {
+      return url.replace('youtu.be', 'ssyoutube.com');
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 const getDownloadServices = (url: string, platform: Platform) => {
   const encoded = encodeURIComponent(url);
+  const ssUrl = generateSSUrl(url);
   
   const services = [
-    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}`, recommended: true },
-    { name: 'Y2Mate', url: `https://www.y2mate.com/youtube/${encoded}`, platforms: ['youtube'] },
-    { name: 'KeepVid', url: `https://keepvid.to/?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+    // SS method - most reliable for YouTube
+    ...(ssUrl ? [{ name: 'SS Download (Rápido)', url: ssUrl, recommended: true, platforms: ['youtube'] as string[] }] : []),
+    { name: 'YouTube to MP3', url: `https://ytmp3.cc/en/?url=${encoded}`, recommended: false, platforms: ['youtube'] },
+    { name: '9xBuddy', url: `https://9xbuddy.com/process?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}` },
     { name: 'SnapSave', url: `https://snapsave.app/pt?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
-    { name: 'SaveTube', url: `https://savetube.me/pt/1/?url=${encoded}`, platforms: ['youtube'] },
   ];
 
   return services.filter(s => !s.platforms || s.platforms.includes(platform));
