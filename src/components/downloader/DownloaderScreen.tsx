@@ -41,19 +41,12 @@ export const DownloaderScreen = () => {
       if (fnError) throw fnError;
 
       if (data?.url) {
-        // Direct download link
         window.open(data.url, '_blank');
-        toast.success('Download iniciado!');
-      } else if (data?.status === 'picker' && data?.picker?.length > 0) {
-        // Multiple options - open first one
-        window.open(data.picker[0].url, '_blank');
-        toast.success('Download iniciado!');
-      } else if (data?.status === 'fallback' && data?.links?.length > 0) {
-        // Fallback - open first link
-        window.open(data.links[0].url, '_blank');
-        toast.info('Abrindo site alternativo para download');
+        toast.success('Abrindo site de download!');
+      } else if (data?.error) {
+        setError(data.error);
       } else {
-        setError('Não foi possível processar este link. Tente outro URL.');
+        setError('Não foi possível processar este link. Verifique se é um link válido do YouTube.');
       }
     } catch (err: any) {
       console.error('[Downloader] Error:', err);
