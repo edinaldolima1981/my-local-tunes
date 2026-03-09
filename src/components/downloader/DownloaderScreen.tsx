@@ -150,9 +150,34 @@ export const DownloaderScreen = () => {
       return;
     }
 
-    // Show download services
+    // Get best service and open directly
+    const services = getDownloadServices(target, detected);
+    const best = services.find(s => s.recommended) || services[0];
+    
+    if (best) {
+      // Save to history
+      addRecord({
+        url: target,
+        title: `${platformLabels[detected]} - via ${best.name}`,
+        platform: detected,
+        format: 'auto',
+        method: best.name,
+      });
+
+      // Open directly
+      const a = document.createElement('a');
+      a.href = best.url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      toast.success(`Abrindo ${best.name}...`);
+    }
+
+    // Also show all services below
     setShowServices(true);
-    toast.success(`${platformLabels[detected]} detectado! Escolha um serviço abaixo.`);
   };
 
   const handleSearch = () => {
