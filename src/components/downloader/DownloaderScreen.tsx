@@ -34,11 +34,29 @@ export const DownloaderScreen = () => {
     setError('');
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('youtube-download', {
+      const response = await supabase.functions.invoke('youtube-download', {
         body: { url: youtubeUrl.trim() },
       });
 
-      if (fnError) throw fnError;
+      const data = response.data;
+      const fnError = response.error;
+
+      // Handle non-2xx responses - the error body contains our JSON
+      if (fnError) {
+        // Try to parse error context for our custom message
+        const errBody = (fnError as any)?.context;
+        if (errBody && typeof errBody.json === 'function') {
+          try {
+            const parsed = await errBody.json();
+            if (parsed?.error) {
+              setError(parsed.error);
+              return;
+            }
+          } catch {}
+        }
+        setError('Erro ao processar. Verifique se é um link de vídeo do YouTube.');
+        return;
+      }
 
       if (data?.url) {
         window.open(data.url, '_blank');
