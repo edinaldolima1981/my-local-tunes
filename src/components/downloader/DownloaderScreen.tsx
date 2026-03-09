@@ -309,72 +309,51 @@ export const DownloaderScreen = () => {
         </AnimatePresence>
       </div>
 
-      {/* Download Services - appears after clicking "Buscar Vídeo" */}
-      <AnimatePresence>
-        {showServices && downloadServices.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            className="space-y-3"
-          >
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Download size={16} />
-              Escolha um serviço para baixar
-            </h2>
+      {/* Sites de Download */}
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+          <Music size={16} />
+          Sites para baixar músicas grátis
+        </h2>
 
-            <div className="space-y-2">
-              {downloadServices.map((service) => (
-                <a
-                  key={service.name}
-                  href={service.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => {
-                    if (isDuplicate(link.trim())) {
-                      toast.warning('Este link já foi baixado anteriormente');
-                    }
-                    addRecord({
-                      url: link.trim(),
-                      title: `${platformLabels[platform!]} - via ${service.name}`,
-                      platform: platform!,
-                      format: 'auto',
-                      method: service.name,
-                    });
-                  }}
-                  className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
-                    service.recommended
-                      ? 'bg-primary/10 border-primary/30 hover:bg-primary/20'
-                      : 'bg-secondary/30 border-border/50 hover:bg-secondary/50'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                    service.recommended ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    <Download size={18} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      {service.name}
-                      {service.recommended && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
-                          Recomendado
-                        </span>
-                      )}
-                    </p>
-                    <p className="text-xs text-muted-foreground">Clique para abrir e baixar</p>
-                  </div>
-                  <ExternalLink size={16} className="text-muted-foreground shrink-0" />
-                </a>
-              ))}
-            </div>
+        <div className="space-y-2">
+          {downloadServices.map((service) => (
+            <a
+              key={service.name}
+              href={service.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center gap-3 p-4 rounded-xl border transition-colors ${
+                service.recommended
+                  ? 'bg-primary/10 border-primary/30 hover:bg-primary/20'
+                  : 'bg-secondary/30 border-border/50 hover:bg-secondary/50'
+              }`}
+            >
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
+                service.recommended ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+              }`}>
+                <Music size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  {service.name}
+                  {service.recommended && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold">
+                      Recomendado
+                    </span>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">{service.description}</p>
+              </div>
+              <ExternalLink size={16} className="text-muted-foreground shrink-0" />
+            </a>
+          ))}
+        </div>
 
-            <p className="text-xs text-muted-foreground text-center">
-              Você será redirecionado para o serviço externo com opções de formato e qualidade
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <p className="text-xs text-muted-foreground text-center">
+          Clique em um dos sites acima para buscar e baixar músicas
+        </p>
+      </div>
 
       {/* Advanced Mode */}
       <div className="space-y-3">
