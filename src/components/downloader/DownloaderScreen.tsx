@@ -63,24 +63,11 @@ const getYouTubeId = (url: string): string | null => {
   return match ? match[1] : null;
 };
 
-const getDownloadServices = (url: string, platform: Platform) => {
-  const encoded = encodeURIComponent(url);
-  const videoId = getYouTubeId(url);
-  
-  const services = [
-    // Cobalt auto-processa o link direto - melhor opção
-    { name: 'Cobalt (Auto)', url: `https://cobalt.tools/?url=${encoded}`, recommended: true, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] as string[] },
-    // SaveFrom com hash auto-preenche e processa
-    { name: 'SaveFrom', url: `https://en.savefrom.net/#url=${encoded}`, recommended: false },
-    // Y2Mate abre direto na página do vídeo
-    ...(videoId ? [
-      { name: 'Y2Mate', url: `https://www.y2mate.com/download-youtube/${videoId}`, recommended: false, platforms: ['youtube'] as string[] },
-    ] : []),
-    // SnapSave auto-processa
-    { name: 'SnapSave', url: `https://snapsave.app/pt?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+const getDownloadServices = () => {
+  return [
+    { name: 'Sua Música', url: 'https://suamusica.com.br', recommended: true, description: 'Músicas brasileiras grátis' },
+    { name: 'Palco MP3', url: 'https://www.palcomp3.com.br', recommended: false, description: 'Downloads de MP3 grátis' },
   ];
-
-  return services.filter(s => !s.platforms || s.platforms.includes(platform));
 };
 
 const platformIcons: Record<Platform, React.ReactNode> = {
