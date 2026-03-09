@@ -8,6 +8,7 @@ import {
 const downloadServices = [
   { name: 'Sua Música', url: 'https://suamusica.com.br', recommended: true, description: 'Músicas brasileiras grátis' },
   { name: 'Palco MP3', url: 'https://www.palcomp3.com.br', recommended: false, description: 'Downloads de MP3 grátis' },
+  { name: 'YouTube', url: 'https://www.youtube.com/', recommended: false, description: 'Maior plataforma de vídeos e música' },
 ];
 
 export const DownloaderScreen = () => {
