@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Heart, ListMusic } from 'lucide-react';
+import { ChevronDown, Heart, ListMusic, Download, Loader2 } from 'lucide-react';
 import { Track, RepeatMode } from '@/types/music';
 import { AlbumArt } from './AlbumArt';
 import { ProgressBar } from './ProgressBar';
@@ -7,6 +8,8 @@ import { PlayerControls } from './PlayerControls';
 import { VideoPlayer } from './VideoPlayer';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/hooks/useFavorites';
+import { getAudioFile } from '@/services/audioStorageService';
+import { toast } from 'sonner';
 
 interface FullscreenPlayerProps {
   isOpen: boolean;
@@ -45,6 +48,55 @@ export function FullscreenPlayer({
 }: FullscreenPlayerProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isCurrentFavorite = track ? isFavorite(track.id) : false;
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!track) return;
+    setIsDownloading(true);
+    try {
+      const dataUrl = await getAudioFile(track.id);
+      if (!dataUrl) {
+        toast.error('Arquivo não encontrado no armazenamento');
+        return;
+      }
+
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Determine extension from mime type
+      const mimeType = blob.type || 'audio/mpeg';
+      const extMap: Record<string, string> = {
+        'audio/mpeg': '.mp3',
+        'audio/mp4': '.m4a',
+        'audio/aac': '.aac',
+        'audio/wav': '.wav',
+        'audio/flac': '.flac',
+        'audio/ogg': '.ogg',
+        'video/mp4': '.mp4',
+        'video/webm': '.webm',
+      };
+      const ext = extMap[mimeType] || '.mp3';
+      const fileName = `${track.title} - ${track.artist}${ext}`.replace(/[/\\?%*:|"<>]/g, '_');
+
+      // Trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`"${track.title}" salvo com sucesso!`);
+    } catch (err) {
+      console.error('[Download]', err);
+      toast.error('Erro ao salvar o arquivo');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -139,20 +191,33 @@ export function FullscreenPlayer({
                       {track?.artist || 'Selecione uma música'}
                     </p>
                   </div>
-                  <motion.div whileTap={{ scale: 0.9 }}>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => track && toggleFavorite(track.id)}
-                      className={`ml-4 transition-colors ${
-                        isCurrentFavorite 
-                          ? 'text-red-500 hover:text-red-400' 
-                          : 'text-muted-foreground hover:text-primary'
-                      }`}
-                    >
-                      <Heart size={24} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
-                    </Button>
-                  </motion.div>
+                  <div className="flex items-center gap-1 ml-4">
+                    <motion.div whileTap={{ scale: 0.9 }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDownload}
+                        disabled={!track || isDownloading}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        {isDownloading ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} />}
+                      </Button>
+                    </motion.div>
+                    <motion.div whileTap={{ scale: 0.9 }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => track && toggleFavorite(track.id)}
+                        className={`transition-colors ${
+                          isCurrentFavorite 
+                            ? 'text-red-500 hover:text-red-400' 
+                            : 'text-muted-foreground hover:text-primary'
+                        }`}
+                      >
+                        <Heart size={24} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
 
                 {/* Progress Bar */}
