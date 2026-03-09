@@ -205,9 +205,7 @@ export const DownloaderScreen = () => {
     setIsLoading(false);
   };
 
-  const downloadServices = platform && platform !== 'unknown' 
-    ? getDownloadServices(link.trim(), platform) 
-    : [];
+  const downloadServices = getDownloadServices();
 
   return (
     <div className="space-y-6">
