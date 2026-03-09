@@ -18,9 +18,11 @@ import {
   Wrench,
   X,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDownloadHistory } from '@/hooks/useDownloadHistory';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type Platform = 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'unknown';
