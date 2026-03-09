@@ -93,6 +93,8 @@ export const DownloaderScreen = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState('');
   const [showServices, setShowServices] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const linkRef = useRef<HTMLAnchorElement>(null);
 
   const { history, addRecord, removeRecord, clearHistory, isDuplicate } = useDownloadHistory();
