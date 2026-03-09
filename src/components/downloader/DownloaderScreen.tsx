@@ -44,6 +44,19 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
+// Clean URL: extract original video URL from nested downloader URLs
+const cleanUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // If someone pasted a downloader URL like you2downloader.com/?url=ENCODED
+    const nested = u.searchParams.get("url");
+    if (nested) {
+      return cleanUrl(decodeURIComponent(nested));
+    }
+  } catch {}
+  return url;
+};
+
 // Extract YouTube video ID
 const getYouTubeId = (url: string): string | null => {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
