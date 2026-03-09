@@ -191,20 +191,33 @@ export function FullscreenPlayer({
                       {track?.artist || 'Selecione uma música'}
                     </p>
                   </div>
-                  <motion.div whileTap={{ scale: 0.9 }}>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => track && toggleFavorite(track.id)}
-                      className={`ml-4 transition-colors ${
-                        isCurrentFavorite 
-                          ? 'text-red-500 hover:text-red-400' 
-                          : 'text-muted-foreground hover:text-primary'
-                      }`}
-                    >
-                      <Heart size={24} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
-                    </Button>
-                  </motion.div>
+                  <div className="flex items-center gap-1 ml-4">
+                    <motion.div whileTap={{ scale: 0.9 }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={handleDownload}
+                        disabled={!track || isDownloading}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        {isDownloading ? <Loader2 size={22} className="animate-spin" /> : <Download size={22} />}
+                      </Button>
+                    </motion.div>
+                    <motion.div whileTap={{ scale: 0.9 }}>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => track && toggleFavorite(track.id)}
+                        className={`transition-colors ${
+                          isCurrentFavorite 
+                            ? 'text-red-500 hover:text-red-400' 
+                            : 'text-muted-foreground hover:text-primary'
+                        }`}
+                      >
+                        <Heart size={24} fill={isCurrentFavorite ? 'currentColor' : 'none'} />
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
 
                 {/* Progress Bar */}
