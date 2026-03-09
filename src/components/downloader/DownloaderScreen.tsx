@@ -125,10 +125,11 @@ export const DownloaderScreen = () => {
     }
   };
 
-  const processLink = (url: string) => {
+  const processLink = async (url: string) => {
     const target = url.trim();
     setError('');
     setShowServices(false);
+    setDownloadUrl(null);
 
     if (!target) {
       setError('Cole um link para continuar');
@@ -148,34 +149,47 @@ export const DownloaderScreen = () => {
       return;
     }
 
-    // Get best service and open directly
-    const services = getDownloadServices(target, detected);
-    const best = services.find(s => s.recommended) || services[0];
-    
-    if (best) {
-      // Save to history
-      addRecord({
-        url: target,
-        title: `${platformLabels[detected]} - via ${best.name}`,
-        platform: detected,
-        format: 'auto',
-        method: best.name,
+    // Try backend API first
+    setIsLoading(true);
+    toast.info('Buscando link de download...');
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('youtube-download', {
+        body: { url: target },
       });
 
-      // Open directly
-      const a = document.createElement('a');
-      a.href = best.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (fnError) throw fnError;
 
-      toast.success(`Abrindo ${best.name}...`);
+      if (data?.url) {
+        // Direct download link found!
+        setDownloadUrl(data.url);
+        addRecord({
+          url: target,
+          title: `${platformLabels[detected]} - Download direto`,
+          platform: detected,
+          format: 'auto',
+          method: 'API Cobalt',
+        });
+        toast.success('Link de download encontrado! Clique para baixar.');
+      } else if (data?.status === 'fallback' && data?.links) {
+        // API unavailable, show fallback links
+        setShowServices(true);
+        toast.warning('API indisponível. Use um dos serviços abaixo.');
+      } else if (data?.picker) {
+        // Multiple options (e.g. video + audio)
+        setDownloadUrl(data.picker[0]?.url || data.url);
+        toast.success('Link encontrado! Clique para baixar.');
+      } else {
+        setShowServices(true);
+        toast.warning('Não foi possível gerar link direto. Use um serviço abaixo.');
+      }
+    } catch (err) {
+      console.error('[Download API]', err);
+      setShowServices(true);
+      toast.warning('Erro na API. Use um dos serviços abaixo.');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Also show all services below
-    setShowServices(true);
   };
 
   const handleSearch = () => {
