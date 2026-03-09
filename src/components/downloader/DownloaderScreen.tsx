@@ -18,9 +18,11 @@ import {
   Wrench,
   X,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDownloadHistory } from '@/hooks/useDownloadHistory';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 type Platform = 'youtube' | 'tiktok' | 'instagram' | 'facebook' | 'unknown';
@@ -91,6 +93,8 @@ export const DownloaderScreen = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState('');
   const [showServices, setShowServices] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const linkRef = useRef<HTMLAnchorElement>(null);
 
   const { history, addRecord, removeRecord, clearHistory, isDuplicate } = useDownloadHistory();
@@ -121,10 +125,11 @@ export const DownloaderScreen = () => {
     }
   };
 
-  const processLink = (url: string) => {
+  const processLink = async (url: string) => {
     const target = url.trim();
     setError('');
     setShowServices(false);
+    setDownloadUrl(null);
 
     if (!target) {
       setError('Cole um link para continuar');
@@ -144,34 +149,47 @@ export const DownloaderScreen = () => {
       return;
     }
 
-    // Get best service and open directly
-    const services = getDownloadServices(target, detected);
-    const best = services.find(s => s.recommended) || services[0];
-    
-    if (best) {
-      // Save to history
-      addRecord({
-        url: target,
-        title: `${platformLabels[detected]} - via ${best.name}`,
-        platform: detected,
-        format: 'auto',
-        method: best.name,
+    // Try backend API first
+    setIsLoading(true);
+    toast.info('Buscando link de download...');
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('youtube-download', {
+        body: { url: target },
       });
 
-      // Open directly
-      const a = document.createElement('a');
-      a.href = best.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      if (fnError) throw fnError;
 
-      toast.success(`Abrindo ${best.name}...`);
+      if (data?.url) {
+        // Direct download link found!
+        setDownloadUrl(data.url);
+        addRecord({
+          url: target,
+          title: `${platformLabels[detected]} - Download direto`,
+          platform: detected,
+          format: 'auto',
+          method: 'API Cobalt',
+        });
+        toast.success('Link de download encontrado! Clique para baixar.');
+      } else if (data?.status === 'fallback' && data?.links) {
+        // API unavailable, show fallback links
+        setShowServices(true);
+        toast.warning('API indisponível. Use um dos serviços abaixo.');
+      } else if (data?.picker) {
+        // Multiple options (e.g. video + audio)
+        setDownloadUrl(data.picker[0]?.url || data.url);
+        toast.success('Link encontrado! Clique para baixar.');
+      } else {
+        setShowServices(true);
+        toast.warning('Não foi possível gerar link direto. Use um serviço abaixo.');
+      }
+    } catch (err) {
+      console.error('[Download API]', err);
+      setShowServices(true);
+      toast.warning('Erro na API. Use um dos serviços abaixo.');
+    } finally {
+      setIsLoading(false);
     }
-
-    // Also show all services below
-    setShowServices(true);
   };
 
   const handleSearch = () => {
@@ -183,6 +201,8 @@ export const DownloaderScreen = () => {
     setPlatform(null);
     setError('');
     setShowServices(false);
+    setDownloadUrl(null);
+    setIsLoading(false);
   };
 
   const downloadServices = platform && platform !== 'unknown' 
@@ -249,11 +269,29 @@ export const DownloaderScreen = () => {
             <ClipboardPaste size={16} />
             Colar
           </Button>
-          <Button onClick={handleSearch} className="flex-1 gap-2 rounded-xl">
-            <Search size={16} />
-            Buscar Vídeo
+          <Button onClick={handleSearch} disabled={isLoading} className="flex-1 gap-2 rounded-xl">
+            {isLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+            {isLoading ? 'Buscando...' : 'Buscar Vídeo'}
           </Button>
         </div>
+
+        {/* Direct Download Button */}
+        <AnimatePresence>
+          {downloadUrl && (
+            <motion.a
+              href={downloadUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="flex items-center justify-center gap-3 p-4 rounded-xl bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
+            >
+              <Download size={20} />
+              Baixar Agora
+            </motion.a>
+          )}
+        </AnimatePresence>
 
         {/* Error */}
         <AnimatePresence>
