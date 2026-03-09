@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Heart, ListMusic } from 'lucide-react';
+import { ChevronDown, Heart, ListMusic, Download, Loader2 } from 'lucide-react';
 import { Track, RepeatMode } from '@/types/music';
 import { AlbumArt } from './AlbumArt';
 import { ProgressBar } from './ProgressBar';
@@ -7,6 +8,8 @@ import { PlayerControls } from './PlayerControls';
 import { VideoPlayer } from './VideoPlayer';
 import { Button } from '@/components/ui/button';
 import { useFavorites } from '@/hooks/useFavorites';
+import { getAudioFile } from '@/services/audioStorageService';
+import { toast } from 'sonner';
 
 interface FullscreenPlayerProps {
   isOpen: boolean;
