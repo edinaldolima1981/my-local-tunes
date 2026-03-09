@@ -44,6 +44,19 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
+// Clean URL: extract original video URL from nested downloader URLs
+const cleanUrl = (url: string): string => {
+  try {
+    const u = new URL(url);
+    // If someone pasted a downloader URL like you2downloader.com/?url=ENCODED
+    const nested = u.searchParams.get("url");
+    if (nested) {
+      return cleanUrl(decodeURIComponent(nested));
+    }
+  } catch {}
+  return url;
+};
+
 // Extract YouTube video ID
 const getYouTubeId = (url: string): string | null => {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
@@ -225,12 +238,14 @@ export const DownloaderScreen = () => {
             type="url"
             value={link}
             onChange={(e) => {
-              const val = e.target.value;
+              const raw = e.target.value;
+              const val = cleanUrl(raw.trim());
               setLink(val);
               setError('');
               setShowServices(false);
-              if (val.trim() && isValidUrl(val.trim())) {
-                const detected = detectPlatform(val.trim());
+              setDownloadUrl(null);
+              if (val && isValidUrl(val)) {
+                const detected = detectPlatform(val);
                 setPlatform(detected);
                 if (detected === 'unknown') {
                   setError('Plataforma não reconhecida. Tente YouTube, TikTok, Instagram ou Facebook.');
