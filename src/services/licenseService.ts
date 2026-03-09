@@ -37,7 +37,7 @@ const generateDeviceId = (): string => {
   const existingId = localStorage.getItem('device_id');
   if (existingId) return existingId;
 
-  const newId = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`;
+  const newId = crypto.randomUUID();
   localStorage.setItem('device_id', newId);
   return newId;
 };
