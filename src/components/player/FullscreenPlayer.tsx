@@ -48,6 +48,55 @@ export function FullscreenPlayer({
 }: FullscreenPlayerProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const isCurrentFavorite = track ? isFavorite(track.id) : false;
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!track) return;
+    setIsDownloading(true);
+    try {
+      const dataUrl = await getAudioFile(track.id);
+      if (!dataUrl) {
+        toast.error('Arquivo não encontrado no armazenamento');
+        return;
+      }
+
+      // Convert data URL to blob
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+
+      // Determine extension from mime type
+      const mimeType = blob.type || 'audio/mpeg';
+      const extMap: Record<string, string> = {
+        'audio/mpeg': '.mp3',
+        'audio/mp4': '.m4a',
+        'audio/aac': '.aac',
+        'audio/wav': '.wav',
+        'audio/flac': '.flac',
+        'audio/ogg': '.ogg',
+        'video/mp4': '.mp4',
+        'video/webm': '.webm',
+      };
+      const ext = extMap[mimeType] || '.mp3';
+      const fileName = `${track.title} - ${track.artist}${ext}`.replace(/[/\\?%*:|"<>]/g, '_');
+
+      // Trigger download
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast.success(`"${track.title}" salvo com sucesso!`);
+    } catch (err) {
+      console.error('[Download]', err);
+      toast.error('Erro ao salvar o arquivo');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <AnimatePresence>
