@@ -42,33 +42,26 @@ const isValidUrl = (url: string): boolean => {
   }
 };
 
-// Generate SS-method URL (prepend "ss" to youtube.com)
-const generateSSUrl = (url: string): string | null => {
-  try {
-    const u = new URL(url);
-    if (u.hostname.includes('youtube.com')) {
-      return url.replace('youtube.com', 'ssyoutube.com');
-    }
-    if (u.hostname.includes('youtu.be')) {
-      return url.replace('youtu.be', 'ssyoutube.com');
-    }
-    return null;
-  } catch {
-    return null;
-  }
+// Extract YouTube video ID
+const getYouTubeId = (url: string): string | null => {
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
 };
 
 const getDownloadServices = (url: string, platform: Platform) => {
   const encoded = encodeURIComponent(url);
-  const ssUrl = generateSSUrl(url);
+  const videoId = getYouTubeId(url);
   
   const services = [
-    // SS method - most reliable for YouTube
-    ...(ssUrl ? [{ name: 'SS Download (Rápido)', url: ssUrl, recommended: true, platforms: ['youtube'] as string[] }] : []),
-    { name: 'YouTube to MP3', url: `https://ytmp3.cc/en/?url=${encoded}`, recommended: false, platforms: ['youtube'] },
-    { name: '9xBuddy', url: `https://9xbuddy.com/process?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
-    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}` },
+    // Most reliable YouTube downloaders in 2026
+    ...(videoId ? [
+      { name: 'Y2Mate', url: `https://www.y2mate.com/download-youtube/${videoId}`, recommended: true, platforms: ['youtube'] as string[] },
+      { name: 'SaveTube', url: `https://savetube.me/pt/youtube-video-downloader?url=${encoded}`, recommended: false, platforms: ['youtube'] as string[] },
+      { name: 'Cobalt (Melhor qualidade)', url: `https://cobalt.tools/?url=${encoded}`, recommended: false, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] as string[] },
+    ] : []),
+    { name: 'You2Download', url: `https://you2downloader.com/?url=${encoded}`, platforms: ['youtube'] },
     { name: 'SnapSave', url: `https://snapsave.app/pt?url=${encoded}`, platforms: ['youtube', 'tiktok', 'instagram', 'facebook'] },
+    { name: 'SaveFrom', url: `https://en.savefrom.net/1-${platform}-video-downloader/?url=${encoded}` },
   ];
 
   return services.filter(s => !s.platforms || s.platforms.includes(platform));
