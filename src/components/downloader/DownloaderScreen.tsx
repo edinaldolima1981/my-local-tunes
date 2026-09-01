@@ -171,6 +171,32 @@ export const DownloaderScreen = () => {
             {error}
           </div>
         )}
+
+        {/* yt-dlp command for PC users */}
+        {isValidYoutubeUrl(trimmedUrl) && (
+          <div className="mt-3 p-3 rounded-xl bg-black/40 border border-green-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Terminal size={14} className="text-green-400" />
+              <p className="text-xs font-semibold text-green-400">No PC (método yt-dlp):</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 min-w-0 text-[11px] font-mono text-green-300 bg-black/40 px-2 py-1.5 rounded-lg overflow-x-auto whitespace-nowrap">
+                {ytDlpCommand}
+              </code>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCopyCommand}
+                className="shrink-0 h-8 w-8 p-0 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+              >
+                {copiedCommand ? <Check size={16} /> : <Copy size={16} />}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              No Windows: Terminal → <span className="font-mono">winget install yt-dlp</span> → cole o comando
+            </p>
+          </div>
+        )}
       </motion.div>
 
       {/* Sites de Download */}
