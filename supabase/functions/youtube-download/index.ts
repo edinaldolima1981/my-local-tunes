@@ -52,12 +52,11 @@ serve(async (req) => {
     // Return direct links to reliable download sites
     return new Response(JSON.stringify({
       status: "redirect",
-      url: `https://ssyoutube.com/watch?v=${videoId}`,
+      url: `https://www.y2mate.com/youtube/${videoId}`,
       alternatives: [
-        { name: "SSYouTube", url: `https://ssyoutube.com/watch?v=${videoId}` },
         { name: "Y2Mate", url: `https://www.y2mate.com/youtube/${videoId}` },
-        { name: "SaveFrom", url: `https://en.savefrom.net/1-youtube-video-downloader-394/#url=${encoded}` },
         { name: "9xBuddy", url: `https://9xbuddy.xyz/process?url=${encoded}` },
+        { name: "Yt1s", url: `https://yt1s.com/en?q=${encoded}` },
       ],
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
