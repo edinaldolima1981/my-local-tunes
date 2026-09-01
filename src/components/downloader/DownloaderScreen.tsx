@@ -8,6 +8,9 @@ import {
   Loader2,
   Link2,
   AlertCircle,
+  Terminal,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +29,22 @@ export const DownloaderScreen = () => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copiedCommand, setCopiedCommand] = useState(false);
   const lastProcessedRef = useRef('');
+
+  const trimmedUrl = youtubeUrl.trim();
+  const ytDlpCommand = `yt-dlp -x --audio-format mp3 "${trimmedUrl}"`;
+
+  const handleCopyCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(ytDlpCommand);
+      setCopiedCommand(true);
+      toast.success('Comando copiado! Cole no terminal do PC.');
+      setTimeout(() => setCopiedCommand(false), 2000);
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  };
 
   const handleInputChange = (value: string) => {
     setYoutubeUrl(value);
@@ -151,6 +169,32 @@ export const DownloaderScreen = () => {
           <div className="flex items-center gap-2 mt-2 text-xs text-red-400">
             <AlertCircle size={14} />
             {error}
+          </div>
+        )}
+
+        {/* yt-dlp command for PC users */}
+        {isValidYoutubeUrl(trimmedUrl) && (
+          <div className="mt-3 p-3 rounded-xl bg-black/40 border border-green-500/20">
+            <div className="flex items-center gap-2 mb-2">
+              <Terminal size={14} className="text-green-400" />
+              <p className="text-xs font-semibold text-green-400">No PC (método yt-dlp):</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 min-w-0 text-[11px] font-mono text-green-300 bg-black/40 px-2 py-1.5 rounded-lg overflow-x-auto whitespace-nowrap">
+                {ytDlpCommand}
+              </code>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleCopyCommand}
+                className="shrink-0 h-8 w-8 p-0 text-green-400 hover:text-green-300 hover:bg-green-500/10"
+              >
+                {copiedCommand ? <Check size={16} /> : <Copy size={16} />}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-2">
+              No Windows: Terminal → <span className="font-mono">winget install yt-dlp</span> → cole o comando
+            </p>
           </div>
         )}
       </motion.div>
