@@ -125,7 +125,14 @@ export const DownloaderScreen = () => {
             <Input
               placeholder="https://youtube.com/watch?v=..."
               value={youtubeUrl}
-              onChange={(e) => { setYoutubeUrl(e.target.value); setError(''); }}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData('text');
+                if (isValidYoutubeUrl(text)) {
+                  e.preventDefault();
+                  handleInputChange(text);
+                }
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleYoutubeDownload()}
               className="pl-9 bg-background/50 border-red-500/20"
               disabled={loading}
