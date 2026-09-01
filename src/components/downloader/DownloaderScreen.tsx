@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Music,
@@ -51,7 +51,7 @@ export const DownloaderScreen = () => {
 
     try {
       const response = await supabase.functions.invoke('youtube-download', {
-        body: { url: youtubeUrl.trim() },
+        body: { url },
       });
 
       const data = response.data;
@@ -131,8 +131,8 @@ export const DownloaderScreen = () => {
               disabled={loading}
             />
           </div>
-          <Button
-            onClick={handleYoutubeDownload}
+            <Button
+            onClick={() => handleYoutubeDownload()}
             disabled={loading || !youtubeUrl.trim()}
             className="bg-red-600 hover:bg-red-700 text-white shrink-0"
           >
