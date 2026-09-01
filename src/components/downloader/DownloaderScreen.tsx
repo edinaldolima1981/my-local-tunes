@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Music,
@@ -19,13 +19,29 @@ const downloadServices = [
   { name: 'Palco MP3', url: 'https://www.palcomp3.com.br', recommended: false, description: 'Downloads de MP3 grátis' },
 ];
 
+const isValidYoutubeUrl = (value: string) =>
+  /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/.test(value.trim());
+
 export const DownloaderScreen = () => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const lastProcessedRef = useRef('');
 
-  const handleYoutubeDownload = async () => {
-    if (!youtubeUrl.trim()) {
+  const handleInputChange = (value: string) => {
+    setYoutubeUrl(value);
+    setError('');
+    // Auto-start download as soon as a valid YouTube link is pasted
+    const trimmed = value.trim();
+    if (isValidYoutubeUrl(trimmed) && !loading && lastProcessedRef.current !== trimmed) {
+      lastProcessedRef.current = trimmed;
+      handleYoutubeDownload(trimmed);
+    }
+  };
+
+  const handleYoutubeDownload = async (urlOverride?: string) => {
+    const url = (urlOverride ?? youtubeUrl).trim();
+    if (!url) {
       toast.error('Cole uma URL do YouTube');
       return;
     }
@@ -35,7 +51,7 @@ export const DownloaderScreen = () => {
 
     try {
       const response = await supabase.functions.invoke('youtube-download', {
-        body: { url: youtubeUrl.trim() },
+        body: { url },
       });
 
       const data = response.data;
@@ -109,14 +125,21 @@ export const DownloaderScreen = () => {
             <Input
               placeholder="https://youtube.com/watch?v=..."
               value={youtubeUrl}
-              onChange={(e) => { setYoutubeUrl(e.target.value); setError(''); }}
+              onChange={(e) => handleInputChange(e.target.value)}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData('text');
+                if (isValidYoutubeUrl(text)) {
+                  e.preventDefault();
+                  handleInputChange(text);
+                }
+              }}
               onKeyDown={(e) => e.key === 'Enter' && handleYoutubeDownload()}
               className="pl-9 bg-background/50 border-red-500/20"
               disabled={loading}
             />
           </div>
-          <Button
-            onClick={handleYoutubeDownload}
+            <Button
+            onClick={() => handleYoutubeDownload()}
             disabled={loading || !youtubeUrl.trim()}
             className="bg-red-600 hover:bg-red-700 text-white shrink-0"
           >
