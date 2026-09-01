@@ -8,6 +8,9 @@ import {
   Loader2,
   Link2,
   AlertCircle,
+  Terminal,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,7 +29,22 @@ export const DownloaderScreen = () => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [copiedCommand, setCopiedCommand] = useState(false);
   const lastProcessedRef = useRef('');
+
+  const trimmedUrl = youtubeUrl.trim();
+  const ytDlpCommand = `yt-dlp -x --audio-format mp3 "${trimmedUrl}"`;
+
+  const handleCopyCommand = async () => {
+    try {
+      await navigator.clipboard.writeText(ytDlpCommand);
+      setCopiedCommand(true);
+      toast.success('Comando copiado! Cole no terminal do PC.');
+      setTimeout(() => setCopiedCommand(false), 2000);
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  };
 
   const handleInputChange = (value: string) => {
     setYoutubeUrl(value);
