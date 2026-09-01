@@ -19,13 +19,29 @@ const downloadServices = [
   { name: 'Palco MP3', url: 'https://www.palcomp3.com.br', recommended: false, description: 'Downloads de MP3 grátis' },
 ];
 
+const isValidYoutubeUrl = (value: string) =>
+  /(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([a-zA-Z0-9_-]{11})/.test(value.trim());
+
 export const DownloaderScreen = () => {
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const lastProcessedRef = useRef('');
 
-  const handleYoutubeDownload = async () => {
-    if (!youtubeUrl.trim()) {
+  const handleInputChange = (value: string) => {
+    setYoutubeUrl(value);
+    setError('');
+    // Auto-start download as soon as a valid YouTube link is pasted
+    const trimmed = value.trim();
+    if (isValidYoutubeUrl(trimmed) && !loading && lastProcessedRef.current !== trimmed) {
+      lastProcessedRef.current = trimmed;
+      handleYoutubeDownload(trimmed);
+    }
+  };
+
+  const handleYoutubeDownload = async (urlOverride?: string) => {
+    const url = (urlOverride ?? youtubeUrl).trim();
+    if (!url) {
       toast.error('Cole uma URL do YouTube');
       return;
     }
